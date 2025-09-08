@@ -3,5 +3,12 @@
 version = 4
 
 [[package]]
-name = "gameboy_emulator_rust"
+name = "gameboy_core"
 version = "0.1.0"
+
+[[package]]
+name = "rustyboy"
+version = "0.1.0"
+dependencies = [
+ "gameboy_core",
+]
