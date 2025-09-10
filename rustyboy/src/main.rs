@@ -1,4 +1,4 @@
 fn main() {
-    let result = gameboy_core::add(2, 4);
-    println!("Result: {}", result);
+    let gameboy_cpu = gameboy_core::prelude::Cpu::new();
+    println!("Hello from RustyBoy!");
 }
