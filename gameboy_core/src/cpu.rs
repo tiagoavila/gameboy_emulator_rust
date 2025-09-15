@@ -68,16 +68,26 @@ impl Cpu {
     // Table of opcodes: https://gbdev.io/pandocs/CPU_Instruction_Set.html
     fn execute(&mut self, opcode: u8) {
         match opcode {
-            0x00 => return, // NOP
+            0x00 => Cpu::nop(), // NOP
 
+            // TODO: Refactor using bitmask
+            // match value {
+            // v if (v & 0b00101000) == 0b00101000 => { /* bits 3 and 5 set */ }
+            // v if (v & 0b00010000) != 0 => { /* only bit 4 set */ }
+            // _ => { /* other cases */ }
             0x06 | 0x0E | 0x16 | 0x1E | 0x26 | 0x2E => self.ld_r8_imm8(opcode),
 
-            0x7F => return,
+            0x7F => Cpu::nop(), // LD A, A
             0x78 | 0x79 | 0x7A | 0x7B | 0x7C | 0x7D => self.ld_r8_r8(opcode),
             0x7E => self.ld_a_hl(),
 
             _ => return,
         }
+    }
+
+    /// No Operation - Do nothing for one CPU cycle.
+    fn nop() {
+        return;
     }
 
     /// Load the 8-bit immediate value into the specified 8-bit register.
@@ -86,7 +96,7 @@ impl Cpu {
         let imm8 = self.memory_bus.read_byte(self.registers.pc);
         self.registers.set_8bit_register(register, imm8);
     }
-    
+
     fn ld_r8_r8(&mut self, opcode: u8) {
         let dest = (opcode & 0b00111000) >> 3;
         let source = opcode & 0b00000111;
@@ -119,7 +129,7 @@ impl Registers {
     pub fn increment_pc(&mut self) {
         self.pc += 1;
     }
-    
+
     pub fn set_8bit_register(&mut self, register: u8, value: u8) {
         match register {
             0b000 => self.b = value,
@@ -132,7 +142,7 @@ impl Registers {
             _ => (),
         }
     }
-    
+
     pub fn get_8bit_register(&self, register: u8) -> u8 {
         match register {
             0b000 => self.b,
