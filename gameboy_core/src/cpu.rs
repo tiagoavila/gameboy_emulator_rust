@@ -69,17 +69,16 @@ impl Cpu {
     fn execute(&mut self, opcode: u8) {
         match opcode {
             0x00 => Cpu::nop(), // NOP
-
-            // TODO: Refactor using bitmask
-            // match value {
-            // v if (v & 0b00101000) == 0b00101000 => { /* bits 3 and 5 set */ }
-            // v if (v & 0b00010000) != 0 => { /* only bit 4 set */ }
-            // _ => { /* other cases */ }
-            0x06 | 0x0E | 0x16 | 0x1E | 0x26 | 0x2E => self.ld_r8_imm8(opcode),
-
-            0x7F => Cpu::nop(), // LD A, A
-            0x78 | 0x79 | 0x7A | 0x7B | 0x7C | 0x7D => self.ld_r8_r8(opcode),
-            0x7E => self.ld_a_hl(),
+            v if (v & 0b00000110) == 0b00000110 => self.ld_r8_imm8(opcode),
+            0b01110110 => self.halt(), // HALT
+            v if (v & 0b01000000) == 0b01000000 => self.ld_r8_r8(opcode),
+            v if (v & 0b01000110) == 0b01000110 => self.ld_r8_hl(opcode),
+            v if (v & 0b01110000) == 0b01110000 => self.ld_hl_r8(opcode),
+            0b00110110 => self.ld_hl_imm8(),
+            0b00001010 => self.ld_a_bc(),
+            0b00011010 => self.ld_a_de(),
+            0b11110010 => self.ld_a_c(),
+            0b11100010 => self.ld_c_a(),
 
             _ => return,
         }
@@ -92,22 +91,99 @@ impl Cpu {
 
     /// Load the 8-bit immediate value into the specified 8-bit register.
     fn ld_r8_imm8(&mut self, opcode: u8) {
-        let register = (opcode & 0b00111000) >> 3;
-        let imm8 = self.memory_bus.read_byte(self.registers.pc);
-        self.registers.set_8bit_register(register, imm8);
+        let destination = Cpu::get_destination_register(opcode);
+        let imm8 = self.get_imm8();
+        self.registers.set_8bit_register(destination, imm8);
     }
 
     fn ld_r8_r8(&mut self, opcode: u8) {
-        let dest = (opcode & 0b00111000) >> 3;
+        let destination = Cpu::get_destination_register(opcode);
         let source = opcode & 0b00000111;
+
+        if destination == source {
+            return; // No operation needed if both registers are the same
+        }
+
         let value = self.registers.get_8bit_register(source);
-        self.registers.set_8bit_register(dest, value);
+        self.registers.set_8bit_register(destination, value);
     }
 
-    // Load the contents of register HL into register A.
-    fn ld_a_hl(&mut self) {
+    /// Load the contents of register HL into 8-bit register.
+    fn ld_r8_hl(&mut self, opcode: u8) {
+        let destination = Cpu::get_destination_register(opcode);
         let hl = self.registers.get_hl();
-        self.registers.a = self.memory_bus.read_byte(hl);
+        let value = self.memory_bus.read_byte(hl);
+        self.registers.set_8bit_register(destination, value);
+    }
+
+    /// Stores the contents of register r in memory specified by register pair HL.
+    fn ld_hl_r8(&mut self, opcode: u8) {
+        let source = Cpu::get_source_register(opcode);
+        let value = self.registers.get_8bit_register(source);
+        let hl = self.registers.get_hl();
+        self.memory_bus.write_byte(hl, value);
+    }
+
+    /// Loads 8-bit immediate data n into memory specified by register pair HL.
+    fn ld_hl_imm8(&mut self) {
+        let imm8 = self.get_imm8();
+        let hl = self.registers.get_hl();
+        self.memory_bus.write_byte(hl, imm8);
+    }
+
+    /// Loads the contents specified by the contents of register pair BC into register A.
+    fn ld_a_bc(&mut self) {
+        let bc = self.registers.get_bc();
+        let value = self.memory_bus.read_byte(bc);
+        self.registers.a = value;
+    }
+
+    /// Loads the contents specified by the contents of register pair DE into register A.
+    fn ld_a_de(&mut self) {
+        let de = self.registers.get_de();
+        let value = self.memory_bus.read_byte(de);
+        self.registers.a = value;
+    }
+
+    /// Loads into register A the contents of the internal RAM, port register, or mode register at the address in
+    /// the range FF00h-FFFFh specified by register C.
+    fn ld_a_c(&mut self) {
+        let start_address = 0xFF00;
+        let c_register = 0b001;
+        let ram_address = start_address + c_register;
+        let value = self.memory_bus.read_byte(ram_address);
+        self.registers.a = value;
+    }
+    
+    /// Loads the contents of register A in the internal RAM, port register, or mode register at the address in the 
+    /// range FF00h-FFFFh specified by register C.
+    fn ld_c_a(&mut self) {
+        let start_address = 0xFF00;
+        let c_register = 0b001;
+        let ram_address = start_address + c_register;
+        self.memory_bus.write_byte(ram_address, self.registers.a);
+    }
+
+    /// Get the 8-bit immediate value
+    fn get_imm8(&self) -> u8 {
+        let imm8 = self.memory_bus.read_byte(self.registers.pc);
+        imm8
+    }
+
+    fn halt(&self) {
+        todo!("Implement HALT instruction")
+    }
+
+    /// Get the destination register from the opcode.
+    /// The destination register is specified by bits 3 to 5 of the opcode.
+    fn get_destination_register(opcode: u8) -> u8 {
+        (opcode & 0b00111000) >> 3
+    }
+
+    /// Get the source register from the opcode.
+    /// The source register is specified by bits 0 to 2 of the opcode.
+    fn get_source_register(opcode: u8) -> u8 {
+        opcode & 0b00000111
     }
 }
 
@@ -157,7 +233,15 @@ impl Registers {
     }
 
     pub fn get_hl(&self) -> u16 {
-        ((self.h << 8) | self.l) as u16
+        ((self.h as u16) << 8) | (self.l as u16)
+    }
+
+    pub fn get_bc(&self) -> u16 {
+        ((self.b as u16) << 8) | (self.c as u16)
+    }
+
+    pub fn get_de(&self) -> u16 {
+        ((self.d as u16) << 8) | (self.e as u16)
     }
 }
 
@@ -185,5 +269,9 @@ impl MemoryBus {
 
     fn read_byte(&self, address: u16) -> u8 {
         self.memory[address as usize]
+    }
+
+    fn write_byte(&mut self, address: u16, value: u8) {
+        self.memory[address as usize] = value;
     }
 }
