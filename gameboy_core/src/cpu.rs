@@ -30,6 +30,8 @@ pub struct MemoryBus {
 }
 
 impl Cpu {
+    const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
+
     pub fn new() -> Self {
         Self {
             registers: Registers::new(),
@@ -79,6 +81,11 @@ impl Cpu {
             0b00011010 => self.ld_a_de(),
             0b11110010 => self.ld_a_c(),
             0b11100010 => self.ld_c_a(),
+            0b11110000 => self.ld_a_imm8(),
+            0b11100000 => self.ld_imm8_a(),
+            0b11111010 => self.ld_a_imm16(),
+            0b11101010 => self.ld_imm16_a(),
+            0b00101010 => self.ld_a_hli(),
 
             _ => return,
         }
@@ -94,6 +101,7 @@ impl Cpu {
         let destination = Cpu::get_destination_register(opcode);
         let imm8 = self.get_imm8();
         self.registers.set_8bit_register(destination, imm8);
+        self.registers.increment_pc();
     }
 
     fn ld_r8_r8(&mut self, opcode: u8) {
@@ -129,6 +137,7 @@ impl Cpu {
         let imm8 = self.get_imm8();
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, imm8);
+        self.registers.increment_pc();
     }
 
     /// Loads the contents specified by the contents of register pair BC into register A.
@@ -148,26 +157,85 @@ impl Cpu {
     /// Loads into register A the contents of the internal RAM, port register, or mode register at the address in
     /// the range FF00h-FFFFh specified by register C.
     fn ld_a_c(&mut self) {
-        let start_address = 0xFF00;
         let c_register = 0b001;
-        let ram_address = start_address + c_register;
+        let ram_address = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register;
         let value = self.memory_bus.read_byte(ram_address);
         self.registers.a = value;
     }
-    
-    /// Loads the contents of register A in the internal RAM, port register, or mode register at the address in the 
+
+    /// Loads the contents of register A in the internal RAM, port register, or mode register at the address in the
     /// range FF00h-FFFFh specified by register C.
     fn ld_c_a(&mut self) {
-        let start_address = 0xFF00;
         let c_register = 0b001;
-        let ram_address = start_address + c_register;
+        let ram_address = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register;
         self.memory_bus.write_byte(ram_address, self.registers.a);
+    }
+
+    /// Loads into register A the contents of the internal RAM, port register, or mode register at the address in the range FF00h-FFFFh
+    /// specified by the 8-bit immediate operand n.
+    /// Note, however, that a 16-bit address should be specified for the mnemonic portion of n, because only the lower-order 8 bits are
+    /// automatically reflected in the machine language.
+    fn ld_a_imm8(&mut self) {
+        let imm8 = self.get_imm8() as u16;
+        let address_to_read_from = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + imm8;
+        let value = self.memory_bus.read_byte(address_to_read_from);
+        self.registers.a = value;
+        self.registers.increment_pc();
+    }
+
+    /// Loads the contents of register A to the internal RAM, port register, or mode register at the address in the range FF00h-FFFFh
+    /// specified by the 8-bit immediate operand n.
+    /// Note, however, that a 16-bit address should be specified for the mnemonic portion of n, because only the
+    /// lower-order 8 bits are automatically reflected in the machine language.
+    fn ld_imm8_a(&mut self) {
+        let imm8 = self.get_imm8() as u16;
+        let address_to_write = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + imm8;
+        self.memory_bus
+            .write_byte(address_to_write, self.registers.a);
+        self.registers.increment_pc();
+    }
+
+    /// Loads into register A the contents of the internal RAM or register specified by 16-bit immediate operand nn.
+    fn ld_a_imm16(&mut self) {
+        let imm16 = self.get_imm16();
+        let value = self.memory_bus.read_byte(imm16);
+        self.registers.a = value;
+        self.registers.increment_pc_twice();
+    }
+
+    /// Loads the contents of register A to the internal RAM or register specified by 16-bit immediate operand nn.
+    fn ld_imm16_a(&mut self) {
+        let imm16 = self.get_imm16();
+        self.memory_bus.write_byte(imm16, self.registers.a);
+        self.registers.increment_pc_twice();
+    }
+
+    /// Loads in register A the contents of memory specified by the contents of register pair HL and simultaneously increments the contents of HL.
+    fn ld_a_hli(&mut self) {
+        let hl = self.registers.get_hl();
+        let value = self.memory_bus.read_byte(hl);
+        self.registers.a = value;
+        self.registers.increment_hl();
+    }
+
+    fn ld_a_hld(&mut self) {
+        let hl = self.registers.get_hl();
+        let value = self.memory_bus.read_byte(hl);
+        self.registers.a = value;
+        self.registers.decrement_hl();
     }
 
     /// Get the 8-bit immediate value
     fn get_imm8(&self) -> u8 {
         let imm8 = self.memory_bus.read_byte(self.registers.pc);
         imm8
+    }
+
+    /// Get the following two bytes, in little-endian order
+    fn get_imm16(&self) -> u16 {
+        let lsb = self.memory_bus.read_byte(self.registers.pc) as u16;
+        let msb = self.memory_bus.read_byte(self.registers.pc + 1) as u16;
+        (msb << 8) | lsb
     }
 
     fn halt(&self) {
@@ -206,6 +274,10 @@ impl Registers {
         self.pc += 1;
     }
 
+    pub fn increment_pc_twice(&mut self) {
+        self.pc += 2;
+    }
+
     pub fn set_8bit_register(&mut self, register: u8, value: u8) {
         match register {
             0b000 => self.b = value,
@@ -242,6 +314,25 @@ impl Registers {
 
     pub fn get_de(&self) -> u16 {
         ((self.d as u16) << 8) | (self.e as u16)
+    }
+
+    pub fn increment_hl(&mut self) {
+        let mut hl = self.get_hl();
+        hl += 1;
+        self.set_hl(hl);
+    }
+
+    pub fn decrement_hl(&mut self) {
+        let mut hl = self.get_hl();
+        hl -= 1;
+        self.set_hl(hl);
+    }
+
+    pub fn set_hl(&mut self, value: u16) {
+        let h = (value >> 8) as u8;
+        let l = (value & 0b011111111) as u8;
+        self.h = h;
+        self.l = l;
     }
 }
 
