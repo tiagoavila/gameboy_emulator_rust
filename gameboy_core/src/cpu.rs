@@ -86,6 +86,7 @@ impl Cpu {
             0b11111010 => self.ld_a_imm16(),
             0b11101010 => self.ld_imm16_a(),
             0b00101010 => self.ld_a_hli(),
+            0b00111010 => self.ld_a_hld(),
 
             _ => return,
         }
@@ -218,6 +219,9 @@ impl Cpu {
         self.registers.increment_hl();
     }
 
+    /// Loads in register A the contents of memory specified by the contents of register pair HL and simultaneously decrements the contents of HL.
+    /// Example: When HL = 8A5Ch and (8A5Ch) = 3Ch,
+    /// LD A, (HLD) ; A ← 3Ch, HL ← 8A5Bh
     fn ld_a_hld(&mut self) {
         let hl = self.registers.get_hl();
         let value = self.memory_bus.read_byte(hl);
