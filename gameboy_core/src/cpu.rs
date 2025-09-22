@@ -87,6 +87,10 @@ impl Cpu {
             0b11101010 => self.ld_imm16_a(),
             0b00101010 => self.ld_a_hli(),
             0b00111010 => self.ld_a_hld(),
+            0b00000010 => self.ld_bc_a(),
+            0b00010010 => self.ld_de_a(),
+            0b00100010 => self.ld_hli_a(),
+            0b00110010 => self.ld_hld_a(),
 
             _ => return,
         }
@@ -226,6 +230,40 @@ impl Cpu {
         let hl = self.registers.get_hl();
         let value = self.memory_bus.read_byte(hl);
         self.registers.a = value;
+        self.registers.decrement_hl();
+    }
+
+    /// Stores the contents of register A in the memory specified by register pair BC.
+    /// Example: When BC = 205Fh and A = 3Fh,
+    /// LD (BC) , A ; (205Fh) ← 3Fh
+    fn ld_bc_a(&mut self) {
+        let bc = self.registers.get_bc();
+        self.memory_bus.write_byte(bc, self.registers.a);
+    }
+
+    /// Stores the contents of register A in the memory specified by register pair DE.
+    /// Example: When DE = 205Ch and A = 00h,
+    /// LD (DE) , A ; (205Ch) ← 00h
+    fn ld_de_a(&mut self) {
+        let de = self.registers.get_de();
+        self.memory_bus.write_byte(de, self.registers.a);
+    }
+
+    /// Stores the contents of register A in the memory specified by register pair HL and simultaneously increments the contents of HL.
+    /// Example: When HL = FFFFh and A = 56h,
+    /// LD (HLI), A ; (0xFFFF) ← 56h, HL = 0000h
+    fn ld_hli_a(&mut self) {
+        let hl = self.registers.get_hl();
+        self.memory_bus.write_byte(hl, self.registers.a);
+        self.registers.increment_hl();
+    }
+
+    /// Stores the contents of register A in the memory specified by register pair HL and simultaneously decrements the contents of HL.
+    /// Example: HL = 4000h and A = 5h,
+    /// LD (HLD), A ; (4000h) ← 5h, HL = 3FFFh
+    fn ld_hld_a(&mut self) {
+        let hl = self.registers.get_hl();
+        self.memory_bus.write_byte(hl, self.registers.a);
         self.registers.decrement_hl();
     }
 
