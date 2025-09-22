@@ -25,6 +25,26 @@ pub struct FlagsRegister {
     pub c_flag: bool, // Carry Flag
 }
 
+impl FlagsRegister {
+    /// This bit is set if a carry occurred from the last math operation
+    pub fn set_c_flag(&mut self, carry: bool) {
+        self.c_flag = carry
+    }
+    /// This bit is set if a carry occurred from the lower nibble (a.k.a the lower four bits) in the last math operation.
+    /// We can set this by masking out the upper nibble of both the A register and the value we're adding and testing 
+    /// if this value is greater than 0xF (0b00001111).
+    pub fn set_h_flag_on_add(&mut self, value1: u8, value2: u8) {
+        let value1_lower_nibble = value1 & 0b00001111;
+        let value2_lower_nibble = value2 & 0b00001111;
+        self.h_flag = value1_lower_nibble + value2_lower_nibble > 0xF;
+    }
+    
+    /// This bit is set if and only if the result of an operation is zero
+    pub fn set_z_flag(&mut self, result: u8) {
+        self.z_flag = result == 0;
+    }
+}
+
 pub struct MemoryBus {
     memory: [u8; 0xFFFF],
 }
@@ -70,9 +90,11 @@ impl Cpu {
     // Table of opcodes: https://gbdev.io/pandocs/CPU_Instruction_Set.html
     fn execute(&mut self, opcode: u8) {
         match opcode {
-            0x00 => Cpu::nop(), // NOP
-            v if (v & 0b00000110) == 0b00000110 => self.ld_r8_imm8(opcode),
+            0x00 => Cpu::nop(),        // NOP
             0b01110110 => self.halt(), // HALT
+
+            // 8-Bit Transfer and Input/Output Instructions
+            v if (v & 0b00000110) == 0b00000110 => self.ld_r8_imm8(opcode),
             v if (v & 0b01000000) == 0b01000000 => self.ld_r8_r8(opcode),
             v if (v & 0b01000110) == 0b01000110 => self.ld_r8_hl(opcode),
             v if (v & 0b01110000) == 0b01110000 => self.ld_hl_r8(opcode),
@@ -92,6 +114,8 @@ impl Cpu {
             0b00100010 => self.ld_hli_a(),
             0b00110010 => self.ld_hld_a(),
 
+            // 8-Bit Arithmetic and Logical Operation Instructions
+            v if (v & 0b10000000) == 0b10000000 => self.add_a_r(opcode),
             _ => return,
         }
     }
@@ -111,7 +135,7 @@ impl Cpu {
 
     fn ld_r8_r8(&mut self, opcode: u8) {
         let destination = Cpu::get_destination_register(opcode);
-        let source = opcode & 0b00000111;
+        let source = Cpu::get_source_register(opcode);
 
         if destination == source {
             return; // No operation needed if both registers are the same
@@ -267,6 +291,23 @@ impl Cpu {
         self.registers.decrement_hl();
     }
 
+    /// Adds the contents of register r to those of register A and stores the results in register A.
+    /// Flag Z: Set if the result is 0; otherwise reset.
+    ///      H: Set if there is a carry from bit 3; otherwise reset.
+    ///      N: Reset
+    ///      CY: Set if there is a carry from bit 7; otherwise reset.
+    /// Example: When A = 0x3A and B = 0xC6,
+    /// ADD A, B ; A ← 0, Z ← 1, H ← 1, N ← 0, CY ← 1
+    fn add_a_r(&mut self, opcode: u8) {
+        let source = Cpu::get_source_register(opcode);
+        let value = self.registers.get_8bit_register(source);
+        let (result, carry) = self.registers.a.overflowing_add(value);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_c_flag(carry);
+        self.flags_register.set_z_flag(result);
+        self.flags_register.set_h_flag_on_add(self.registers.a, value); 
+    }
+
     /// Get the 8-bit immediate value
     fn get_imm8(&self) -> u8 {
         let imm8 = self.memory_bus.read_byte(self.registers.pc);
@@ -333,15 +374,23 @@ impl Registers {
         }
     }
 
+    /// Register r, r'
+    /// A 111
+    /// B 000
+    /// C 001
+    /// D 010
+    /// E 011
+    /// H 100
+    /// L 101
     pub fn get_8bit_register(&self, register: u8) -> u8 {
         match register {
             0b000 => self.b,
+            0b111 => self.a,
             0b001 => self.c,
             0b010 => self.d,
             0b011 => self.e,
             0b100 => self.h,
             0b101 => self.l,
-            0b111 => self.a,
             _ => 0,
         }
     }
