@@ -25,32 +25,13 @@ pub struct FlagsRegister {
     pub c_flag: bool, // Carry Flag
 }
 
-impl FlagsRegister {
-    /// This bit is set if a carry occurred from the last math operation
-    pub fn set_c_flag(&mut self, carry: bool) {
-        self.c_flag = carry
-    }
-    /// This bit is set if a carry occurred from the lower nibble (a.k.a the lower four bits) in the last math operation.
-    /// We can set this by masking out the upper nibble of both the A register and the value we're adding and testing 
-    /// if this value is greater than 0xF (0b00001111).
-    pub fn set_h_flag_on_add(&mut self, value1: u8, value2: u8) {
-        let value1_lower_nibble = value1 & 0b00001111;
-        let value2_lower_nibble = value2 & 0b00001111;
-        self.h_flag = value1_lower_nibble + value2_lower_nibble > 0xF;
-    }
-    
-    /// This bit is set if and only if the result of an operation is zero
-    pub fn set_z_flag(&mut self, result: u8) {
-        self.z_flag = result == 0;
-    }
-}
-
 pub struct MemoryBus {
     memory: [u8; 0xFFFF],
 }
 
 impl Cpu {
     const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
+    const EIGHT_BIT_REGISTERS: [u8; 7] = [0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b111];
 
     pub fn new() -> Self {
         Self {
@@ -94,10 +75,21 @@ impl Cpu {
             0b01110110 => self.halt(), // HALT
 
             // 8-Bit Transfer and Input/Output Instructions
-            v if (v & 0b00000110) == 0b00000110 => self.ld_r8_imm8(opcode),
-            v if (v & 0b01000000) == 0b01000000 => self.ld_r8_r8(opcode),
-            v if (v & 0b01000110) == 0b01000110 => self.ld_r8_hl(opcode),
-            v if (v & 0b01110000) == 0b01110000 => self.ld_hl_r8(opcode),
+            v if (v & 0b01000110) == 0b01000110 && Cpu::destination_is_8bit_register(opcode) => {
+                self.ld_r8_hl(opcode)
+            }
+            v if (v & 0b01110000) == 0b01110000 && Cpu::source_is_8bit_register(opcode) => {
+                self.ld_hl_r8(opcode)
+            }
+            v if (v & 0b01000000) == 0b01000000
+                && Cpu::source_is_8bit_register(opcode)
+                && Cpu::destination_is_8bit_register(opcode) =>
+            {
+                self.ld_r8_r8(opcode)
+            }
+            v if (v & 0b00000110) == 0b00000110 && Cpu::destination_is_8bit_register(opcode) => {
+                self.ld_r8_imm8(opcode)
+            }
             0b00110110 => self.ld_hl_imm8(),
             0b00001010 => self.ld_a_bc(),
             0b00011010 => self.ld_a_de(),
@@ -115,7 +107,14 @@ impl Cpu {
             0b00110010 => self.ld_hld_a(),
 
             // 8-Bit Arithmetic and Logical Operation Instructions
-            v if (v & 0b10000000) == 0b10000000 => self.add_a_r(opcode),
+            v if (v & 0b10000000) == 0b10000000 && Cpu::source_is_8bit_register(opcode) => {
+                self.add_a_r(opcode)
+            },
+            0b11000110 => self.add_a_n(),
+            0b10000110 => self.add_a_hl(),
+            v if (v & 0b10001000) == 0b10001000 && Cpu::source_is_8bit_register(opcode) => {
+                self.adc_a_r(opcode)
+            },
             _ => return,
         }
     }
@@ -305,7 +304,50 @@ impl Cpu {
         self.flags_register.n_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
-        self.flags_register.set_h_flag_on_add(self.registers.a, value); 
+        self.flags_register
+            .set_h_flag_on_add(self.registers.a, value);
+    }
+
+    /// Adds 8-bit immediate operand n to the contents of register A and stores the results in register A.
+    /// Example: When A = 3Ch,
+    /// ADD A. FFh ; A ← 3Bh, Z ← 0, H ← 1, N ← 0, CY ← 1
+    fn add_a_n(&mut self) {
+        let immediate_byte = self.get_imm8();
+        let value = self.registers.get_8bit_register(immediate_byte);
+        let (result, carry) = self.registers.a.overflowing_add(value);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_c_flag(carry);
+        self.flags_register.set_z_flag(result);
+        self.flags_register
+            .set_h_flag_on_add(self.registers.a, value);
+        self.registers.increment_pc();
+    }
+
+    /// Adds the contents of memory specified by the contents of register pair HL to the contents of register A and stores the results in register A.
+    /// Example: When A = 3Ch and (HL) = 12h,
+    /// ADD A, (HL) ; A ← 4Eh, Z ← 0, H ← 0, N ← 0, CY ← 0
+    fn add_a_hl(&mut self) {
+        let hl = self.registers.get_hl();
+        let value = self.memory_bus.read_byte(hl);
+        let (result, carry) = self.registers.a.overflowing_add(value);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_c_flag(carry);
+        self.flags_register.set_z_flag(result);
+        self.flags_register
+            .set_h_flag_on_add(self.registers.a, value);
+    }
+
+    /// Adds the contents of register r and CY to the contents of register A and stores the results in register A.
+    fn adc_a_r(&mut self, opcode: u8) {
+        let source = Cpu::get_source_register(opcode);
+        let value = self.registers.get_8bit_register(source);
+        let cy = self.flags_register.get_c_flag_u8();
+        let (result, carry) = self.registers.a.overflowing_add(value);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_c_flag(carry);
+        self.flags_register.set_z_flag(result);
+        self.flags_register
+            .set_h_flag_on_add(self.registers.a, value);
     }
 
     /// Get the 8-bit immediate value
@@ -336,6 +378,18 @@ impl Cpu {
     fn get_source_register(opcode: u8) -> u8 {
         opcode & 0b00000111
     }
+
+    /// Check if the destination register is an 8-bit register.
+    fn destination_is_8bit_register(opcode: u8) -> bool {
+        let destination_register = Cpu::get_destination_register(opcode);
+        Self::EIGHT_BIT_REGISTERS.contains(&destination_register)
+    }
+
+    /// Check if the source register is an 8-bit register.
+    fn source_is_8bit_register(opcode: u8) -> bool {
+        let source_register = Cpu::get_source_register(opcode);
+        Self::EIGHT_BIT_REGISTERS.contains(&source_register)
+    }
 }
 
 impl Registers {
@@ -364,12 +418,12 @@ impl Registers {
     pub fn set_8bit_register(&mut self, register: u8, value: u8) {
         match register {
             0b000 => self.b = value,
+            0b111 => self.a = value,
             0b001 => self.c = value,
             0b010 => self.d = value,
             0b011 => self.e = value,
             0b100 => self.h = value,
             0b101 => self.l = value,
-            0b111 => self.a = value,
             _ => (),
         }
     }
@@ -439,6 +493,33 @@ impl FlagsRegister {
 
     pub fn get_zero_flag(&self) -> bool {
         self.z_flag
+    }
+
+    /// This bit is set if a carry occurred from the last math operation
+    pub fn set_c_flag(&mut self, carry: bool) {
+        self.c_flag = carry
+    }
+    /// This bit is set if a carry occurred from the lower nibble (a.k.a the lower four bits) in the last math operation.
+    /// We can set this by masking out the upper nibble of both the A register and the value we're adding and testing
+    /// if this value is greater than 0xF (0b00001111).
+    pub fn set_h_flag_on_add(&mut self, value1: u8, value2: u8) {
+        let value1_lower_nibble = value1 & 0b00001111;
+        let value2_lower_nibble = value2 & 0b00001111;
+        self.h_flag = value1_lower_nibble + value2_lower_nibble > 0xF;
+    }
+
+    /// This bit is set if and only if the result of an operation is zero
+    pub fn set_z_flag(&mut self, result: u8) {
+        self.z_flag = result == 0;
+    }
+    
+    /// Returns the c_flag as u8 to be used in ADC instructions
+    pub fn get_c_flag_u8(&self) -> u8 {
+        if self.c_flag {
+            1
+        } else {
+            0
+        }
     }
 }
 
