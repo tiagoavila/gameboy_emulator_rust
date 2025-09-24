@@ -1,32 +1,9 @@
-use crate::constants::MEMORY_SIZE;
+use crate::prelude::{FlagsRegister, MemoryBus, Registers};
 
 pub struct Cpu {
     pub registers: Registers,
     pub flags_register: FlagsRegister,
     pub memory_bus: MemoryBus,
-}
-
-pub struct Registers {
-    pub a: u8,
-    pub b: u8,
-    pub c: u8,
-    pub d: u8,
-    pub e: u8,
-    pub h: u8,
-    pub l: u8,
-    pub sp: u16,
-    pub pc: u16,
-}
-
-pub struct FlagsRegister {
-    pub z_flag: bool, // Zero Flag
-    pub n_flag: bool, // Subtract Flag
-    pub h_flag: bool, // Half Carry Flag
-    pub c_flag: bool, // Carry Flag
-}
-
-pub struct MemoryBus {
-    memory: [u8; 0xFFFF],
 }
 
 impl Cpu {
@@ -109,12 +86,19 @@ impl Cpu {
             // 8-Bit Arithmetic and Logical Operation Instructions
             v if (v & 0b10000000) == 0b10000000 && Cpu::source_is_8bit_register(opcode) => {
                 self.add_a_r(opcode)
-            },
+            }
             0b11000110 => self.add_a_n(),
             0b10000110 => self.add_a_hl(),
             v if (v & 0b10001000) == 0b10001000 && Cpu::source_is_8bit_register(opcode) => {
                 self.adc_a_r(opcode)
-            },
+            }
+            0b11001110 => self.adc_a_imm8(),
+            0b10001110 => self.adc_a_hl(),
+            v if (v & 0b10010000) == 0b10010000 && Cpu::source_is_8bit_register(opcode) => {
+                self.sub_a_r(opcode)
+            }
+            0b11010110 => self.sub_a_imm8(),
+            0b10010110 => self.sub_a_hl(),
             _ => return,
         }
     }
@@ -147,8 +131,7 @@ impl Cpu {
     /// Load the contents of register HL into 8-bit register.
     fn ld_r8_hl(&mut self, opcode: u8) {
         let destination = Cpu::get_destination_register(opcode);
-        let hl = self.registers.get_hl();
-        let value = self.memory_bus.read_byte(hl);
+        let value = self.get_memory_value_at_hl();
         self.registers.set_8bit_register(destination, value);
     }
 
@@ -240,8 +223,7 @@ impl Cpu {
 
     /// Loads in register A the contents of memory specified by the contents of register pair HL and simultaneously increments the contents of HL.
     fn ld_a_hli(&mut self) {
-        let hl = self.registers.get_hl();
-        let value = self.memory_bus.read_byte(hl);
+        let value = self.get_memory_value_at_hl();
         self.registers.a = value;
         self.registers.increment_hl();
     }
@@ -250,8 +232,7 @@ impl Cpu {
     /// Example: When HL = 8A5Ch and (8A5Ch) = 3Ch,
     /// LD A, (HLD) ; A ← 3Ch, HL ← 8A5Bh
     fn ld_a_hld(&mut self) {
-        let hl = self.registers.get_hl();
-        let value = self.memory_bus.read_byte(hl);
+        let value = self.get_memory_value_at_hl();
         self.registers.a = value;
         self.registers.decrement_hl();
     }
@@ -301,11 +282,11 @@ impl Cpu {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register(source);
         let (result, carry) = self.registers.a.overflowing_add(value);
+        let h_flag = FlagsRegister::calculate_h_flag(self.registers.a, value);
         self.flags_register.n_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
-        self.flags_register
-            .set_h_flag_on_add(self.registers.a, value);
+        self.flags_register.set_h_flag(h_flag);
     }
 
     /// Adds 8-bit immediate operand n to the contents of register A and stores the results in register A.
@@ -315,11 +296,11 @@ impl Cpu {
         let immediate_byte = self.get_imm8();
         let value = self.registers.get_8bit_register(immediate_byte);
         let (result, carry) = self.registers.a.overflowing_add(value);
+        let h_flag = FlagsRegister::calculate_h_flag(self.registers.a, value);
         self.flags_register.n_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
-        self.flags_register
-            .set_h_flag_on_add(self.registers.a, value);
+        self.flags_register.set_h_flag(h_flag);
         self.registers.increment_pc();
     }
 
@@ -327,27 +308,95 @@ impl Cpu {
     /// Example: When A = 3Ch and (HL) = 12h,
     /// ADD A, (HL) ; A ← 4Eh, Z ← 0, H ← 0, N ← 0, CY ← 0
     fn add_a_hl(&mut self) {
-        let hl = self.registers.get_hl();
-        let value = self.memory_bus.read_byte(hl);
+        let value = self.get_memory_value_at_hl();
         let (result, carry) = self.registers.a.overflowing_add(value);
+        let h_flag = FlagsRegister::calculate_h_flag(self.registers.a, value);
         self.flags_register.n_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
-        self.flags_register
-            .set_h_flag_on_add(self.registers.a, value);
+        self.flags_register.set_h_flag(h_flag);
     }
 
     /// Adds the contents of register r and CY to the contents of register A and stores the results in register A.
     fn adc_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register(source);
+        self.adc_a_value(value);
+    }
+
+    /// Adds the contents of the immediate byte and CY to the contents of register A and stores the results in register A.
+    fn adc_a_imm8(&mut self) {
+        self.adc_a_value(self.get_imm8());
+    }
+
+    /// Adds the contents of memory specified by the contents of register pair HL and CY to the contents of register A and stores the results in register A.
+    fn adc_a_hl(&mut self) {
+        let value = self.get_memory_value_at_hl();
+        self.adc_a_value(value);
+    }
+
+    /// Adds the contents of operand s and CY to the contents of register A and stores the results in register A. r, n, and (HL) are used for operand s.
+    /// Examples: When A = E1h, E = 0Fh, (HL) = 1Eh, and CY = 1,
+    ///           ADC A, E ; A ← F1h, Z ← 0, H ← 1, CY ← 0
+    ///           ADC A, 3Bh ; A ← 1Dh, Z ← 0, H ← 0, CY ← 0
+    ///           ADC A, (HL) ; A ← 00h, Z ← 1, H ← 1, CY ← 1
+    fn adc_a_value(&mut self, value: u8) {
         let cy = self.flags_register.get_c_flag_u8();
-        let (result, carry) = self.registers.a.overflowing_add(value);
+
+        let (temp_result, temp_carry) = value.overflowing_add(cy);
+        let mut h_flag: bool = FlagsRegister::calculate_h_flag(value, cy);
+
+        let (final_result, final_carry) = self.registers.a.overflowing_add(temp_result);
+        h_flag |= FlagsRegister::calculate_h_flag(self.registers.a, temp_result);
+
+        self.registers.a = final_result;
         self.flags_register.n_flag = false;
+        self.flags_register.set_c_flag(temp_carry | final_carry);
+        self.flags_register.set_z_flag(final_result);
+        self.flags_register.set_h_flag(h_flag);
+    }
+    
+    /// Subtracts the contents of register r from the contents of register A and stores the results in register A.
+    fn sub_a_r(&mut self, opcode: u8) {
+        let source = Cpu::get_source_register(opcode);
+        let value = self.registers.get_8bit_register(source);
+        self.sub_a_value(value);
+    }
+    
+    /// Subtracts the 8-bit immediate operand n from the contents of register A and stores the results in register A.
+    fn sub_a_imm8(&mut self) {
+        let value = self.get_imm8();
+        self.sub_a_value(value);
+        self.registers.increment_pc();
+    }
+    
+    /// Subtracts the contents of memory specified by the contents of register pair HL from the contents of register A and stores the results in register A.
+    fn sub_a_hl(&mut self) {
+        let value = self.get_memory_value_at_hl();
+        self.sub_a_value(value);
+    }
+
+    /// Subtracts the contents of operand s from the contents of register A and stores the results in register A.
+    /// r, n, and (HL) are used for operand s.
+    /// Flags
+    ///     Z: Set if result is 0; otherwise reset.
+    ///     H: Set if there is a borrow from bit 4; otherwise reset.
+    ///     N: Set
+    ///     CY: Set if there is a borrow; otherwise reset.
+    fn sub_a_value(&mut self, value: u8) {
+        let (result, _borrow) = self.registers.a.overflowing_sub(value);
+        // Half-carry flag (H): Set if no borrow from bit 4
+        // In subtraction, half-carry is set when the lower nibble of A is less than the lower nibble of B
+        let half_carry = (self.registers.a & 0x0F) < (value & 0x0F);
+
+        // Carry flag (C): Set if no borrow occurred (A < B)
+        let carry = self.registers.a < value;
+
+        self.registers.a = result;
+        self.flags_register.n_flag = true;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
-        self.flags_register
-            .set_h_flag_on_add(self.registers.a, value);
+        self.flags_register.set_h_flag(half_carry);
     }
 
     /// Get the 8-bit immediate value
@@ -390,151 +439,10 @@ impl Cpu {
         let source_register = Cpu::get_source_register(opcode);
         Self::EIGHT_BIT_REGISTERS.contains(&source_register)
     }
-}
 
-impl Registers {
-    pub fn new() -> Self {
-        Self {
-            a: 0,
-            b: 0,
-            c: 0,
-            d: 0,
-            e: 0,
-            h: 0,
-            l: 0,
-            sp: 0,
-            pc: 0x100,
-        }
-    }
-
-    pub fn increment_pc(&mut self) {
-        self.pc += 1;
-    }
-
-    pub fn increment_pc_twice(&mut self) {
-        self.pc += 2;
-    }
-
-    pub fn set_8bit_register(&mut self, register: u8, value: u8) {
-        match register {
-            0b000 => self.b = value,
-            0b111 => self.a = value,
-            0b001 => self.c = value,
-            0b010 => self.d = value,
-            0b011 => self.e = value,
-            0b100 => self.h = value,
-            0b101 => self.l = value,
-            _ => (),
-        }
-    }
-
-    /// Register r, r'
-    /// A 111
-    /// B 000
-    /// C 001
-    /// D 010
-    /// E 011
-    /// H 100
-    /// L 101
-    pub fn get_8bit_register(&self, register: u8) -> u8 {
-        match register {
-            0b000 => self.b,
-            0b111 => self.a,
-            0b001 => self.c,
-            0b010 => self.d,
-            0b011 => self.e,
-            0b100 => self.h,
-            0b101 => self.l,
-            _ => 0,
-        }
-    }
-
-    pub fn get_hl(&self) -> u16 {
-        ((self.h as u16) << 8) | (self.l as u16)
-    }
-
-    pub fn get_bc(&self) -> u16 {
-        ((self.b as u16) << 8) | (self.c as u16)
-    }
-
-    pub fn get_de(&self) -> u16 {
-        ((self.d as u16) << 8) | (self.e as u16)
-    }
-
-    pub fn increment_hl(&mut self) {
-        let mut hl = self.get_hl();
-        hl += 1;
-        self.set_hl(hl);
-    }
-
-    pub fn decrement_hl(&mut self) {
-        let mut hl = self.get_hl();
-        hl -= 1;
-        self.set_hl(hl);
-    }
-
-    pub fn set_hl(&mut self, value: u16) {
-        let h = (value >> 8) as u8;
-        let l = (value & 0b011111111) as u8;
-        self.h = h;
-        self.l = l;
-    }
-}
-
-impl FlagsRegister {
-    pub fn new() -> Self {
-        Self {
-            z_flag: false,
-            n_flag: false,
-            h_flag: false,
-            c_flag: false,
-        }
-    }
-
-    pub fn get_zero_flag(&self) -> bool {
-        self.z_flag
-    }
-
-    /// This bit is set if a carry occurred from the last math operation
-    pub fn set_c_flag(&mut self, carry: bool) {
-        self.c_flag = carry
-    }
-    /// This bit is set if a carry occurred from the lower nibble (a.k.a the lower four bits) in the last math operation.
-    /// We can set this by masking out the upper nibble of both the A register and the value we're adding and testing
-    /// if this value is greater than 0xF (0b00001111).
-    pub fn set_h_flag_on_add(&mut self, value1: u8, value2: u8) {
-        let value1_lower_nibble = value1 & 0b00001111;
-        let value2_lower_nibble = value2 & 0b00001111;
-        self.h_flag = value1_lower_nibble + value2_lower_nibble > 0xF;
-    }
-
-    /// This bit is set if and only if the result of an operation is zero
-    pub fn set_z_flag(&mut self, result: u8) {
-        self.z_flag = result == 0;
-    }
-    
-    /// Returns the c_flag as u8 to be used in ADC instructions
-    pub fn get_c_flag_u8(&self) -> u8 {
-        if self.c_flag {
-            1
-        } else {
-            0
-        }
-    }
-}
-
-impl MemoryBus {
-    pub fn new() -> Self {
-        Self {
-            memory: [0; MEMORY_SIZE],
-        }
-    }
-
-    fn read_byte(&self, address: u16) -> u8 {
-        self.memory[address as usize]
-    }
-
-    fn write_byte(&mut self, address: u16, value: u8) {
-        self.memory[address as usize] = value;
+    /// Reads the content of memory specified by the contents of register pair HL
+    fn get_memory_value_at_hl(&mut self) -> u8 {
+        let hl = self.registers.get_hl();
+        self.memory_bus.read_byte(hl)
     }
 }
