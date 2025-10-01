@@ -13,9 +13,16 @@ pub struct Registers {
 }
 
 pub struct FlagsRegister {
+    /// Zero Flag: True if the last operation resulted in zero
     pub z_flag: bool, // Zero Flag
+
+    /// Subtract Flag: True if the last operation was a subtraction, false if it was an addition
     pub n_flag: bool, // Subtract Flag
+
+    /// Half Carry Flag: True if there was a carry from bit 3 to bit 4 in the last operation
     pub h_flag: bool, // Half Carry Flag
+
+    /// Carry Flag: True if there was a carry from bit 7 to bit 8 in the last operation
     pub c_flag: bool, // Carry Flag
 }
 

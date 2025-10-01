@@ -46,7 +46,7 @@ impl Cpu {
     // imm8	The following byte
     // imm16	The following two bytes, in little-endian order
     // Table of opcodes: https://gbdev.io/pandocs/CPU_Instruction_Set.html
-    fn execute(&mut self, opcode: u8) {
+    pub fn execute(&mut self, opcode: u8) {
         match opcode {
             0x00 => Cpu::nop(),        // NOP
             0b01110110 => self.halt(), // HALT
@@ -99,6 +99,11 @@ impl Cpu {
             }
             0b11010110 => self.sub_a_imm8(),
             0b10010110 => self.sub_a_hl(),
+            v if (v & 0b10011000) == 0b10011000 && Cpu::source_is_8bit_register(opcode) => {
+                self.sbc_a_r(opcode)
+            }
+            0b11011110 => self.sbc_a_imm8(),
+            0b10011110 => self.sbc_a_hl(),
             _ => return,
         }
     }
@@ -391,6 +396,56 @@ impl Cpu {
 
         // Carry flag (C): Set if no borrow occurred (A < B)
         let carry = self.registers.a < value;
+
+        self.registers.a = result;
+        self.flags_register.n_flag = true;
+        self.flags_register.set_c_flag(carry);
+        self.flags_register.set_z_flag(result);
+        self.flags_register.set_h_flag(half_carry);
+    }
+
+    /// Subtracts the contents of register r and CY from the contents of register A and stores the results in register A. 
+    fn sbc_a_r(&mut self, opcode: u8) {
+        let source = Cpu::get_source_register(opcode);
+        let value = self.registers.get_8bit_register(source);
+        self.sbc_a_value(value);
+    }
+
+    /// Subtracts the 8-bit immediate operand n and CY from the contents of register A and stores the results in register A.
+    fn sbc_a_imm8(&mut self) {
+        let value = self.get_imm8();
+        self.sbc_a_value(value);
+        self.registers.increment_pc();
+    }
+
+    /// Subtracts the contents of memory specified by the contents of register pair HL and CY from the contents of register A and stores the results in register A.
+    fn sbc_a_hl(&mut self) {
+        let value = self.get_memory_value_at_hl();
+        self.sbc_a_value(value);
+    }
+    
+    /// Subtracts the contents of operand s and CY from the contents of register A and stores the results in register A. 
+    /// r, n, and (HL) are used for operand s.
+    /// Flags
+    ///     Z: Set if result is 0; otherwise reset.
+    ///     H: Set if there is a borrow from bit 4; otherwise reset.
+    ///     N: Set
+    ///     CY: Set if there is a borrow; otherwise reset.
+    fn sbc_a_value(&mut self, value: u8) {
+        let (mut result, _borrow) = self.registers.a.overflowing_sub(value);
+        // Half-carry flag (H): Set if no borrow from bit 4
+        // In subtraction, half-carry is set when the lower nibble of A is less than the lower nibble of B
+        let mut half_carry = (self.registers.a & 0x0F) < (value & 0x0F);
+
+        // Carry flag (C): Set if no borrow occurred (A < B)
+        let mut carry = self.registers.a < value;
+        
+        if self.flags_register.c_flag {
+            half_carry |= (result & 0x0F) < 1;
+            carry |= result < 1;
+            let (result_c_flag , _) = result.overflowing_sub(1);
+            result = result_c_flag;
+        }
 
         self.registers.a = result;
         self.flags_register.n_flag = true;
