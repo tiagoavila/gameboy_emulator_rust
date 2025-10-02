@@ -11,3 +11,8 @@ node_modules
 *.tmp
 *.bak
 /.env
+
+
+# Added by cargo
+
+/target

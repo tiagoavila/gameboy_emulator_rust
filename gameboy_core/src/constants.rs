@@ -1,1 +1,0 @@
-pub const MEMORY_SIZE: usize = 0xFFFF; // 0xFFFF - u16::MAX
