@@ -174,8 +174,8 @@ impl Cpu {
     /// Loads into register A the contents of the internal RAM, port register, or mode register at the address in
     /// the range FF00h-FFFFh specified by register C.
     fn ld_a_c(&mut self) {
-        let c_register = 0b001;
-        let ram_address = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register;
+        let c_register_value = self.registers.c as u16;
+        let ram_address = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register_value;
         let value = self.memory_bus.read_byte(ram_address);
         self.registers.a = value;
     }
@@ -183,8 +183,8 @@ impl Cpu {
     /// Loads the contents of register A in the internal RAM, port register, or mode register at the address in the
     /// range FF00h-FFFFh specified by register C.
     fn ld_c_a(&mut self) {
-        let c_register = 0b001;
-        let ram_address = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register;
+        let c_register_value = self.registers.c as u16;
+        let ram_address = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register_value;
         self.memory_bus.write_byte(ram_address, self.registers.a);
     }
 
