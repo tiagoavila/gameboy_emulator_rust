@@ -1,3 +1,5 @@
+use std::mem;
+
 use crate::gameboy_core::constants::MEMORY_SIZE;
 
 pub struct Registers {
@@ -27,7 +29,7 @@ pub struct FlagsRegister {
 }
 
 pub struct MemoryBus {
-    memory: [u8; 0xFFFF],
+    memory: [u8; MEMORY_SIZE],
 } 
 
 impl Registers {
@@ -100,15 +102,15 @@ impl Registers {
     }
 
     pub fn increment_hl(&mut self) {
-        let mut hl = self.get_hl();
-        hl += 1;
-        self.set_hl(hl);
+        let hl = self.get_hl();
+        let (new_hl, _overflowed) = hl.overflowing_add(1);
+        self.set_hl(new_hl);
     }
 
     pub fn decrement_hl(&mut self) {
-        let mut hl = self.get_hl();
-        hl -= 1;
-        self.set_hl(hl);
+        let hl = self.get_hl();
+        let (new_hl, _overflowed) = hl.overflowing_sub(1);
+        self.set_hl(new_hl);
     }
 
     pub fn set_hl(&mut self, value: u16) {

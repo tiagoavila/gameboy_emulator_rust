@@ -3,6 +3,72 @@ mod tests {
     use crate::gameboy_core::cpu::Cpu;
 
     #[test]
+    fn test_ld_hli_a() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.set_hl(0xFFFF);  // HL = FFFFh
+        cpu.registers.a = 0x56;        // A = 56h
+
+        // Test LD (HLI), A ; (FFFFh) ← 56h, HL = 0000h
+        let opcode = 0b00100010; // LD (HLI), A
+        cpu.execute(opcode);
+        
+        // Verify the value was written to memory correctly
+        assert_eq!(cpu.memory_bus.read_byte(0xFFFF), 0x56, "Memory at initial HL should contain A's value");
+        
+        // Verify HL was incremented (with overflow to 0000h)
+        assert_eq!(cpu.registers.get_hl(), 0x0000, "HL should overflow to 0x0000");
+        
+        // Verify A remains unchanged
+        assert_eq!(cpu.registers.a, 0x56, "A should remain unchanged");
+    }
+
+    #[test]
+    fn test_ld_hld_a() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.set_hl(0x4000);  // HL = 4000h
+        cpu.registers.a = 0x05;        // A = 5h
+
+        // Test LD (HLD), A ; (4000h) ← 5h, HL = 3FFFh
+        let opcode = 0b00110010; // LD (HLD), A
+        cpu.execute(opcode);
+        
+        // Verify the value was written to memory correctly
+        assert_eq!(cpu.memory_bus.read_byte(0x4000), 0x05, "Memory at initial HL should contain A's value");
+        
+        // Verify HL was decremented
+        assert_eq!(cpu.registers.get_hl(), 0x3FFF, "HL should be decremented to 0x3FFF");
+        
+        // Verify A remains unchanged
+        assert_eq!(cpu.registers.a, 0x05, "A should remain unchanged");
+    }
+
+    #[test]
+    fn test_ld_de_a() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.d = 0x20;  // DE = 205Ch
+        cpu.registers.e = 0x5C;
+        cpu.registers.a = 0x00;  // A = 00h
+
+        // Test LD (DE), A ; (205Ch) ← 00h
+        let opcode = 0b00010010; // LD (DE), A
+        cpu.execute(opcode);
+        
+        // Verify the value was written to memory correctly
+        assert_eq!(cpu.memory_bus.read_byte(0x205C), 0x00, "Memory at (DE) should contain A's value");
+        
+        // Verify registers remain unchanged
+        assert_eq!(cpu.registers.d, 0x20, "D should remain unchanged");
+        assert_eq!(cpu.registers.e, 0x5C, "E should remain unchanged");
+        assert_eq!(cpu.registers.a, 0x00, "A should remain unchanged");
+    }
+
+    #[test]
     fn test_ld_bc_a() {
         let mut cpu = Cpu::new();
         
