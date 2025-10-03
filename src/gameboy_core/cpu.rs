@@ -52,19 +52,20 @@ impl Cpu {
             0b01110110 => self.halt(), // HALT
 
             // 8-Bit Transfer and Input/Output Instructions
-            v if (v & 0b01000110) == 0b01000110 && Cpu::destination_is_8bit_register(opcode) => {
+                        //0b11011110
+            v if (v & 0b11000111) == 0b01000110 && Cpu::destination_is_8bit_register(opcode) => {
                 self.ld_r8_hl(opcode)
             }
-            v if (v & 0b01110000) == 0b01110000 && Cpu::source_is_8bit_register(opcode) => {
+            v if (v & 0b11111000) == 0b01110000 && Cpu::source_is_8bit_register(opcode) => {
                 self.ld_hl_r8(opcode)
             }
-            v if (v & 0b01000000) == 0b01000000
+            v if (v & 0b11000000) == 0b01000000
                 && Cpu::source_is_8bit_register(opcode)
                 && Cpu::destination_is_8bit_register(opcode) =>
             {
                 self.ld_r8_r8(opcode)
             }
-            v if (v & 0b00000110) == 0b00000110 && Cpu::destination_is_8bit_register(opcode) => {
+            v if (v & 0b11000111) == 0b00000110 && Cpu::destination_is_8bit_register(opcode) => {
                 self.ld_r8_imm8(opcode)
             }
             0b00110110 => self.ld_hl_imm8(),
@@ -288,6 +289,7 @@ impl Cpu {
         let value = self.registers.get_8bit_register(source);
         let (result, carry) = self.registers.a.overflowing_add(value);
         let h_flag = FlagsRegister::calculate_h_flag(self.registers.a, value);
+        self.registers.a = result;
         self.flags_register.n_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
@@ -298,10 +300,11 @@ impl Cpu {
     /// Example: When A = 3Ch,
     /// ADD A. FFh ; A ← 3Bh, Z ← 0, H ← 1, N ← 0, CY ← 1
     fn add_a_n(&mut self) {
-        let immediate_byte = self.get_imm8();
-        let value = self.registers.get_8bit_register(immediate_byte);
+        let value = self.get_imm8();
         let (result, carry) = self.registers.a.overflowing_add(value);
         let h_flag = FlagsRegister::calculate_h_flag(self.registers.a, value);
+
+        self.registers.a = result;
         self.flags_register.n_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
@@ -316,6 +319,8 @@ impl Cpu {
         let value = self.get_memory_value_at_hl();
         let (result, carry) = self.registers.a.overflowing_add(value);
         let h_flag = FlagsRegister::calculate_h_flag(self.registers.a, value);
+
+        self.registers.a = result;
         self.flags_register.n_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
