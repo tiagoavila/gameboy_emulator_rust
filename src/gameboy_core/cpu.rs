@@ -110,6 +110,11 @@ impl Cpu {
             }
             0b11100110 => self.and_a_imm8(),
             0b10100110 => self.and_a_hl(),
+            v if (v >> 3) == 0b10110 && Cpu::source_is_8bit_register(opcode) => {
+                self.or_a_r(opcode)
+            }
+            0b11110110 => self.or_a_imm8(),
+            0b10110110 => self.or_a_hl(),
             _ => return,
         }
     }
@@ -491,6 +496,37 @@ impl Cpu {
         self.registers.a &= value;
         self.flags_register.set_h_flag(true);
         self.flags_register.set_z_flag(self.registers.a); 
+        self.flags_register.n_flag = false;
+        self.flags_register.c_flag = false;
+    }
+
+    /// Takes the logical-OR for each bit of the contents of register r and register A, and stores the results in register A.
+    fn or_a_r(&mut self, opcode: u8) {
+        let source = Cpu::get_source_register(opcode);
+        let value = self.registers.get_8bit_register(source);
+        self.or_a_value(value);
+    }
+
+    /// Takes the logical-OR for each bit of the contents of immediate operand and register A, and stores the results in register A.
+    fn or_a_imm8(&mut self) {
+        let value = self.get_imm8();
+        self.or_a_value(value);
+        self.registers.increment_pc();
+    }
+
+    /// Takes the logical-OR for each bit of the contents of memory specified by the contents of register pair HL and register A, and stores the results in register A.
+    fn or_a_hl(&mut self) {
+        let value = self.get_memory_value_at_hl();
+        self.or_a_value(value);
+    }
+    
+    /// Takes the logical-OR for each bit of the contents of operand s and register A, and stores the results in register A.
+    fn or_a_value(&mut self, value: u8) {
+        self.registers.a |= value;
+        self.flags_register.set_h_flag(false);
+        self.flags_register.set_z_flag(self.registers.a); 
+        self.flags_register.n_flag = false;
+        self.flags_register.c_flag = false;
     }
 
     /// Get the 8-bit immediate value

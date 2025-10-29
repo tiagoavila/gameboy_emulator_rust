@@ -492,4 +492,68 @@ mod tests {
         // Verify memory content remains unchanged
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x00, "Memory content should remain unchanged");
     }
+
+    #[test]
+    fn test_or_a_r() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x5A;  // A = 5Ah
+
+        // Test OR A ; A ← 5Ah, Z ← 0
+        let opcode = 0b10110111; // OR A
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x5A, "A should remain 0x5A after OR with itself");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+    }
+
+    #[test]
+    fn test_or_imm8() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x5A;  // A = 5Ah
+        // Place immediate value 3 at PC
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x03);
+
+        // Test OR 3 ; A ← 5Bh, Z ← 0
+        let opcode = 0b11110110; // OR n
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x5B, "A should contain 0x5B after OR with immediate value");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+    }
+
+    #[test]
+    fn test_or_hl() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x5A;  // A = 5Ah
+        cpu.registers.set_hl(0x1234);  // Any valid address
+        cpu.memory_bus.write_byte(0x1234, 0x0F);  // (HL) = 0Fh
+
+        // Test OR (HL) ; A ← 5Fh, Z ← 0
+        let opcode = 0b10110110; // OR (HL)
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x5F, "A should contain 0x5F after OR with (HL)");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+        
+        // Verify memory content remains unchanged
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x0F, "Memory content should remain unchanged");
+    }
 }
