@@ -424,4 +424,72 @@ mod tests {
         // Verify D remains unchanged
         assert_eq!(cpu.registers.d, 0x8F, "D should remain unchanged");
     }
+
+    #[test]
+    fn test_and_a_r() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x5A;  // A = 5Ah
+        cpu.registers.l = 0x3F;  // L = 3Fh
+
+        // Test AND L ; A ← 1Ah, Z ← 0, H ← 1, N ← 0 CY ← 0
+        let opcode = 0b10100101; // AND L
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x1A, "A should contain 0x1A after AND with L");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, true, "H flag should be 1");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+        
+        // Verify L remains unchanged
+        assert_eq!(cpu.registers.l, 0x3F, "L should remain unchanged");
+    }
+
+    #[test]
+    fn test_and_a_imm8() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x5A;  // A = 5Ah
+        // Place immediate value 0x38 at PC
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x38);
+
+        // Test AND 38h ; A ← 18h, Z ← 0, H ← 1, N ← 0 CY ← 0
+        let opcode = 0b11100110; // AND n
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x18, "A should contain 0x18 after AND with immediate value");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, true, "H flag should be 1");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+    }
+
+    #[test]
+    fn test_and_a_hl() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x5A;  // A = 5Ah
+        cpu.registers.set_hl(0x1234);  // Any valid address
+        cpu.memory_bus.write_byte(0x1234, 0x00);  // (HL) = 0h
+
+        // Test AND (HL) ; A ← 00h, Z ← 1, H ← 1, N ← 0 CY ← 0
+        let opcode = 0b10100110; // AND (HL)
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x00, "A should contain 0x00 after AND with (HL)");
+        assert_eq!(cpu.flags_register.z_flag, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h_flag, true, "H flag should be 1");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+        
+        // Verify memory content remains unchanged
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x00, "Memory content should remain unchanged");
+    }
 }

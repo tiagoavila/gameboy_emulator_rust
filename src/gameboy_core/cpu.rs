@@ -105,6 +105,11 @@ impl Cpu {
             }
             0b11011110 => self.sbc_a_imm8(),
             0b10011110 => self.sbc_a_hl(),
+            v if (v >> 3) == 0b10100 && Cpu::source_is_8bit_register(opcode) => {
+                self.and_a_r(opcode)
+            }
+            0b11100110 => self.and_a_imm8(),
+            0b10100110 => self.and_a_hl(),
             _ => return,
         }
     }
@@ -459,6 +464,33 @@ impl Cpu {
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(half_carry);
+    }
+
+    /// Takes the logical-AND for each bit of the contents of register r and register A, and stores the results in register A.
+    fn and_a_r(&mut self, opcode: u8) {
+        let source = Cpu::get_source_register(opcode);
+        let value = self.registers.get_8bit_register(source);
+        self.and_a_value(value);
+    }
+
+    /// Takes the logical-AND for each bit of the contents of immediate operand and register A, and stores the results in register A.
+    fn and_a_imm8(&mut self) {
+        let value = self.get_imm8();
+        self.and_a_value(value);
+        self.registers.increment_pc();
+    }
+
+    /// Takes the logical-AND for each bit of the contents of memory specified by the contents of register pair HL and register A, and stores the results in register A.
+    fn and_a_hl(&mut self) {
+        let value = self.get_memory_value_at_hl();
+        self.and_a_value(value);
+    }
+    
+    /// Takes the logical-AND for each bit of the contents of operand s and register A, and stores the results in register A.
+    fn and_a_value(&mut self, value: u8) {
+        self.registers.a &= value;
+        self.flags_register.set_h_flag(true);
+        self.flags_register.set_z_flag(self.registers.a); 
     }
 
     /// Get the 8-bit immediate value
