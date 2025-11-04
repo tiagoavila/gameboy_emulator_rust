@@ -143,11 +143,17 @@ impl FlagsRegister {
     /// This bit is set if a carry occurred from the lower nibble (a.k.a the lower four bits) in the last math operation.
     /// We can set this by masking out the upper nibble of both the A register and the value we're adding and testing
     /// if this value is greater than 0xF (0b00001111).
-    pub fn calculate_h_flag(value1: u8, value2: u8) -> bool {
+    pub fn calculate_h_flag_on_add(value1: u8, value2: u8) -> bool {
         let value1_lower_nibble = value1 & 0b00001111;
         let value2_lower_nibble = value2 & 0b00001111;
 
         value1_lower_nibble + value2_lower_nibble > 0xF
+    }
+    
+    /// Half-carry flag (H): Set if no borrow from bit 4.
+    /// In subtraction, half-carry is set when the lower nibble of value1 is less than the lower nibble of value2
+    pub fn calculate_h_flag_on_sub(value1: u8, value2: u8) -> bool {
+        (value1 & 0x0F) < (value2 & 0x0F)
     }
     
     /// This bit is set if and only if the result of an operation is zero

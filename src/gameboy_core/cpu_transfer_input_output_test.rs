@@ -556,4 +556,232 @@ mod tests {
         // Verify memory content remains unchanged
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x0F, "Memory content should remain unchanged");
     }
+
+    #[test]
+    fn test_xor_a_r() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial value
+        cpu.registers.a = 0xFF;  // A = FFh
+
+        // Test XOR A ; A ← 00h, Z ← 1
+        let opcode = 0b10101111; // XOR A
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x00, "A should be 0x00 after XOR with itself");
+        assert_eq!(cpu.flags_register.z_flag, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+    }
+
+    #[test]
+    fn test_xor_imm8() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial value
+        cpu.registers.a = 0xFF;  // A = FFh
+        // Place immediate value 0x0F at PC
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x0F);
+
+        // Test XOR 0Fh ; A ← F0h, Z ← 0
+        let opcode = 0b11101110; // XOR n
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0xF0, "A should be 0xF0 after XOR with immediate value");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+    }
+
+    #[test]
+    fn test_xor_hl() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0xFF;  // A = FFh
+        cpu.registers.set_hl(0x1234);  // Any valid address
+        cpu.memory_bus.write_byte(0x1234, 0x8A);  // (HL) = 8Ah
+
+        // Test XOR (HL) ; A ← 75h, Z ← 0
+        let opcode = 0b10101110; // XOR (HL)
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x75, "A should be 0x75 after XOR with (HL)");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+        
+        // Verify memory content remains unchanged
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x8A, "Memory content should remain unchanged");
+    }
+
+    #[test]
+    fn test_cp_a_r() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x3C;  // A = 3Ch
+        cpu.registers.b = 0x2F;  // B = 2Fh
+
+        // Test CP B ; Z ← 0, H ← 1, N ← 1, CY ← 0
+        let opcode = 0b10111000; // CP B
+        cpu.execute(opcode);
+        
+        // Verify flags (A should not change in CP operation)
+        assert_eq!(cpu.registers.a, 0x3C, "A should remain unchanged after CP");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, true, "H flag should be 1");
+        assert_eq!(cpu.flags_register.n_flag, true, "N flag should be 1");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+        
+        // Verify B remains unchanged
+        assert_eq!(cpu.registers.b, 0x2F, "B should remain unchanged");
+    }
+
+    #[test]
+    fn test_cp_a_imm8() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x3C;  // A = 3Ch
+        // Place immediate value 3Ch at PC
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x3C);
+
+        // Test CP 3Ch ; Z ← 1, H ← 0, N ← 1, CY ← 0
+        let opcode = 0b11111110; // CP n
+        cpu.execute(opcode);
+        
+        // Verify flags (A should not change in CP operation)
+        assert_eq!(cpu.registers.a, 0x3C, "A should remain unchanged after CP");
+        assert_eq!(cpu.flags_register.z_flag, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, true, "N flag should be 1");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+    }
+
+    #[test]
+    fn test_cp_a_hl() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.a = 0x3C;  // A = 3Ch
+        cpu.registers.set_hl(0x1234);  // Any valid address
+        cpu.memory_bus.write_byte(0x1234, 0x40);  // (HL) = 40h
+
+        // Test CP (HL) ; Z ← 0, H ← 0, N ← 1, CY ← 1
+        let opcode = 0b10111110; // CP (HL)
+        cpu.execute(opcode);
+        
+        // Verify flags (A should not change in CP operation)
+        assert_eq!(cpu.registers.a, 0x3C, "A should remain unchanged after CP");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, true, "N flag should be 1");
+        assert_eq!(cpu.flags_register.c_flag, true, "CY flag should be 1");
+        
+        // Verify memory content remains unchanged
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x40, "Memory content should remain unchanged");
+    }
+
+    #[test]
+    fn test_inc_r() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial value
+        cpu.registers.a = 0xFF;  // A = FFh
+
+        // Test INC A ; A ← 0, Z ← 1, H ← 1, N ← 0
+        let opcode = 0b00111100; // INC A
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.a, 0x00, "A should be 0x00 after increment from 0xFF");
+        assert_eq!(cpu.flags_register.z_flag, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h_flag, true, "H flag should be 1");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        
+        // Note: CY flag is not affected by INC operation
+        let original_cy = cpu.flags_register.c_flag;
+        assert_eq!(cpu.flags_register.c_flag, original_cy, "CY flag should not be affected by INC");
+    }
+
+    #[test]
+    fn test_inc_hl() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.set_hl(0x1234);  // Any valid address
+        cpu.memory_bus.write_byte(0x1234, 0x50);  // (HL) = 50h
+
+        // Test INC (HL) ; (HL) ← 51h, Z ← 0, H ← 0, N ← 0
+        let opcode = 0b00110100; // INC (HL)
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x51, "(HL) should be 0x51 after increment");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        
+        // Note: CY flag is not affected by INC operation
+        let original_cy = cpu.flags_register.c_flag;
+        assert_eq!(cpu.flags_register.c_flag, original_cy, "CY flag should not be affected by INC");
+        
+        // Verify HL remains unchanged
+        assert_eq!(cpu.registers.get_hl(), 0x1234, "HL should remain unchanged");
+    }
+
+    #[test]
+    fn test_dec_r() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial value
+        cpu.registers.l = 0x01;  // L = 01h
+
+        // Test DEC L ; L ← 0, Z ← 1, H ← 0, N ← 1
+        let opcode = 0b00101101; // DEC L
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.registers.l, 0x00, "L should be 0x00 after decrement from 0x01");
+        assert_eq!(cpu.flags_register.z_flag, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, true, "N flag should be 1");
+        
+        // Note: CY flag is not affected by DEC operation
+        let original_cy = cpu.flags_register.c_flag;
+        assert_eq!(cpu.flags_register.c_flag, original_cy, "CY flag should not be affected by DEC");
+    }
+
+    #[test]
+    fn test_dec_hl() {
+        let mut cpu = Cpu::new();
+        
+        // Set up initial values
+        cpu.registers.set_hl(0x1234);  // Any valid address
+        cpu.memory_bus.write_byte(0x1234, 0x00);  // (HL) = 00h
+
+        // Test DEC (HL) ; (HL) ← FFh, Z ← 0, H ← 1, N ← 1
+        let opcode = 0b00110101; // DEC (HL)
+        cpu.execute(opcode);
+        
+        // Verify result and flags
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0xFF, "(HL) should be 0xFF after decrement from 0x00");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, true, "H flag should be 1");
+        assert_eq!(cpu.flags_register.n_flag, true, "N flag should be 1");
+        
+        // Note: CY flag is not affected by DEC operation
+        let original_cy = cpu.flags_register.c_flag;
+        assert_eq!(cpu.flags_register.c_flag, original_cy, "CY flag should not be affected by DEC");
+        
+        // Verify HL remains unchanged
+        assert_eq!(cpu.registers.get_hl(), 0x1234, "HL should remain unchanged");
+    }
 }
