@@ -55,7 +55,7 @@ impl Registers {
         self.pc += 2;
     }
 
-    pub fn set_8bit_register(&mut self, register: u8, value: u8) {
+    pub fn set_8bit_register_value(&mut self, register: u8, value: u8) {
         match register {
             0b000 => self.b = value,
             0b111 => self.a = value,
@@ -76,7 +76,7 @@ impl Registers {
     /// E 011
     /// H 100
     /// L 101
-    pub fn get_8bit_register(&self, register: u8) -> u8 {
+    pub fn get_8bit_register_value(&self, register: u8) -> u8 {
         match register {
             0b000 => self.b,
             0b111 => self.a,
@@ -88,9 +88,9 @@ impl Registers {
             _ => 0,
         }
     }
-
-    pub fn get_hl(&self) -> u16 {
-        ((self.h as u16) << 8) | (self.l as u16)
+    
+    pub fn get_af(&self) -> u16 {
+        ((self.a as u16) << 8) | 0 // Flags register is not implemented here
     }
 
     pub fn get_bc(&self) -> u16 {
@@ -99,6 +99,10 @@ impl Registers {
 
     pub fn get_de(&self) -> u16 {
         ((self.d as u16) << 8) | (self.e as u16)
+    }
+
+    pub fn get_hl(&self) -> u16 {
+        ((self.h as u16) << 8) | (self.l as u16)
     }
 
     pub fn increment_hl(&mut self) {
@@ -111,6 +115,20 @@ impl Registers {
         let hl = self.get_hl();
         let (new_hl, _overflowed) = hl.overflowing_sub(1);
         self.set_hl(new_hl);
+    }
+
+    pub fn set_bc(&mut self, value: u16) {
+        let b = (value >> 8) as u8;
+        let c = (value & 0b011111111) as u8;
+        self.b = b;
+        self.c = c;
+    }
+
+    pub fn set_de(&mut self, value: u16) {
+        let d = (value >> 8) as u8;
+        let e = (value & 0b011111111) as u8;
+        self.d = d;
+        self.e = e;
     }
 
     pub fn set_hl(&mut self, value: u16) {

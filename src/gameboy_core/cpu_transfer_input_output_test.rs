@@ -426,6 +426,26 @@ mod tests {
     }
 
     #[test]
+    fn test_ld_r16_imm16() {
+        let mut cpu = Cpu::new();
+        
+        // Place immediate value 3A5Bh at PC (little-endian: lower byte first)
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x5B);     // Lower byte
+        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0x3A); // Upper byte
+
+        // Test LD HL, 3A5Bh ; H ← 3Ah, L ← 5Bh
+        let opcode = 0b00100001; // LD HL, nn
+        cpu.execute(opcode);
+        
+        // Verify H and L registers contain the correct values
+        assert_eq!(cpu.registers.h, 0x3A, "H should contain 0x3A");
+        assert_eq!(cpu.registers.l, 0x5B, "L should contain 0x5B");
+        
+        // Verify the entire HL pair has the correct value
+        assert_eq!(cpu.registers.get_hl(), 0x3A5B, "HL should contain 0x3A5B");
+    }
+
+    #[test]
     fn test_and_a_r() {
         let mut cpu = Cpu::new();
         

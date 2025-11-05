@@ -9,6 +9,7 @@ pub struct Cpu {
 impl Cpu {
     const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
     const EIGHT_BIT_REGISTERS: [u8; 7] = [0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b111];
+    const SIXTEEN_BIT_REGISTERS: [u8; 4] = [0b00, 0b01, 0b10, 0b11];
 
     pub fn new() -> Self {
         Self {
@@ -133,6 +134,13 @@ impl Cpu {
                 self.dec_r(opcode)
             },
             0b00110101 => self.dec_hl(),
+            v if (v & 0b11001111) == 0b00000001 && Cpu::destination_is_16bit_register(opcode) => {
+                self.ld_r16_imm16(opcode)
+            },
+            0b11111001 => self.ld_sp_hl(),
+            v if (v & 0b11001111) == 0b11000101 && Cpu::destination_is_16bit_register(opcode) => {
+                self.push_r16_onto_memory_stack(opcode)
+            },
             _ => return,
         }
     }
@@ -146,7 +154,7 @@ impl Cpu {
     fn ld_r8_imm8(&mut self, opcode: u8) {
         let destination = Cpu::get_destination_register(opcode);
         let imm8 = self.get_imm8();
-        self.registers.set_8bit_register(destination, imm8);
+        self.registers.set_8bit_register_value(destination, imm8);
         self.registers.increment_pc();
     }
 
@@ -158,21 +166,21 @@ impl Cpu {
             return; // No operation needed if both registers are the same
         }
 
-        let value = self.registers.get_8bit_register(source);
-        self.registers.set_8bit_register(destination, value);
+        let value = self.registers.get_8bit_register_value(source);
+        self.registers.set_8bit_register_value(destination, value);
     }
 
     /// Load the contents of register HL into 8-bit register.
     fn ld_r8_hl(&mut self, opcode: u8) {
         let destination = Cpu::get_destination_register(opcode);
         let value = self.get_memory_value_at_hl();
-        self.registers.set_8bit_register(destination, value);
+        self.registers.set_8bit_register_value(destination, value);
     }
 
     /// Stores the contents of register r in memory specified by register pair HL.
     fn ld_hl_r8(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, value);
     }
@@ -314,7 +322,7 @@ impl Cpu {
     /// ADD A, B ; A ← 0, Z ← 1, H ← 1, N ← 0, CY ← 1
     fn add_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         let (result, carry) = self.registers.a.overflowing_add(value);
         let h_flag = FlagsRegister::calculate_h_flag_on_add(self.registers.a, value);
         self.registers.a = result;
@@ -358,7 +366,7 @@ impl Cpu {
     /// Adds the contents of register r and CY to the contents of register A and stores the results in register A.
     fn adc_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         self.adc_a_value(value);
     }
 
@@ -397,7 +405,7 @@ impl Cpu {
     /// Subtracts the contents of register r from the contents of register A and stores the results in register A.
     fn sub_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         self.sub_a_value(value);
     }
     
@@ -441,7 +449,7 @@ impl Cpu {
     fn sbc_a_r(&mut self, opcode: u8) {
         println!("Executing SBC A, r");
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         self.sbc_a_value(value);
     }
 
@@ -492,7 +500,7 @@ impl Cpu {
     /// Takes the logical-AND for each bit of the contents of register r and register A, and stores the results in register A.
     fn and_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         self.and_a_value(value);
     }
 
@@ -521,7 +529,7 @@ impl Cpu {
     /// Takes the logical-OR for each bit of the contents of register r and register A, and stores the results in register A.
     fn or_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         self.or_a_value(value);
     }
 
@@ -550,7 +558,7 @@ impl Cpu {
     /// Takes the logical exclusive-OR for each bit of the contents of register r and register A, and stores the results in register A.
     fn xor_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         self.xor_a_value(value);
     }
 
@@ -579,7 +587,7 @@ impl Cpu {
     /// Compares the contents of register r and register A and sets the flag if they are equal.
     fn cp_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
-        let value = self.registers.get_8bit_register(source);
+        let value = self.registers.get_8bit_register_value(source);
         self.cp_a_value(value);
     }
     
@@ -619,7 +627,7 @@ impl Cpu {
     /// Increments the contents of register r by 1.
     fn inc_r(&mut self, opcode: u8) {
         let destination_register = Cpu::get_destination_register(opcode);
-        let value = self.registers.get_8bit_register(destination_register);
+        let value = self.registers.get_8bit_register_value(destination_register);
 
         let (result, _carry) = value.overflowing_add(1);
         let h_flag = FlagsRegister::calculate_h_flag_on_add(value, 1);
@@ -627,7 +635,7 @@ impl Cpu {
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
 
-        self.registers.set_8bit_register(destination_register, result);
+        self.registers.set_8bit_register_value(destination_register, result);
     }
 
     /// Increments by 1 the contents of memory specified by register pair HL.
@@ -646,7 +654,7 @@ impl Cpu {
     /// Subtract 1 from the contents of register r.
     fn dec_r(&mut self, opcode: u8) {
         let destination_register = Cpu::get_destination_register(opcode);
-        let value = self.registers.get_8bit_register(destination_register);
+        let value = self.registers.get_8bit_register_value(destination_register);
 
         let (result, _carry) = value.overflowing_sub(1);
         let h_flag = FlagsRegister::calculate_h_flag_on_sub(value, 1);
@@ -654,7 +662,7 @@ impl Cpu {
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
 
-        self.registers.set_8bit_register(destination_register, result);
+        self.registers.set_8bit_register_value(destination_register, result);
     }
 
     /// Decrements by 1 the contents of memory specified by register pair HL.
@@ -668,6 +676,51 @@ impl Cpu {
         self.flags_register.set_h_flag(h_flag);
 
         self.write_memory_value_at_hl(result);
+    }
+    
+    /// Loads 2 bytes of immediate data to 16-bit register, where it can be the registers BC, DE, HL or SP.
+    /// BC = 0b00, DE = 0b01, HL = 0b10, SP = 0b11
+    fn ld_r16_imm16(&mut self, opcode: u8) {
+        let destination_register = Cpu::get_16bit_destination_register(opcode);
+        let value = self.get_imm16();
+
+        match destination_register {
+            0b00 => self.registers.set_bc(value),
+            0b01 => self.registers.set_de(value),
+            0b10 => self.registers.set_hl(value),
+            0b11 => self.registers.sp = value,
+            _ => (),
+        }
+    }
+    
+    /// Loads the contents of register pair HL in stack pointer SP.
+    fn ld_sp_hl(&mut self) {
+        self.registers.sp = self.registers.get_hl();
+    }
+    
+    /// Pushes the contents of register pair qq (a 16-bit register) onto the memory stack. First 1 is subtracted from SP and the 
+    /// contents of the higher portion of qq are placed on the stack. The contents of the lower portion of qq are 
+    /// then placed on the stack. The contents of SP are automatically decremented by 2.
+    /// FF80h-FFFEh: Can be used as CPU work RAM and/or stack RAM.
+    fn push_r16_onto_memory_stack(&mut self, opcode: u8) {
+        let source_register = Cpu::get_16bit_destination_register(opcode);
+        let value = match source_register {
+            0b00 => self.registers.get_bc(),
+            0b01 => self.registers.get_de(),
+            0b10 => self.registers.get_hl(),
+            0b11 => self.registers.get_af(),
+            _ => 0,
+        };
+
+        let high_byte = (value >> 8) as u8;
+        let low_byte = (value & 0x00FF) as u8;
+
+        self.registers.sp = self.registers.sp.wrapping_sub(1);
+        self.memory_bus
+            .write_byte(self.registers.sp, high_byte);
+        self.registers.sp = self.registers.sp.wrapping_sub(1);
+        self.memory_bus
+            .write_byte(self.registers.sp, low_byte);
     }
 
     /// Get the 8-bit immediate value
@@ -699,10 +752,22 @@ impl Cpu {
         opcode & 0b00000111
     }
 
+    /// Get the 16-bit destination register from the opcode.
+    /// The destination register is specified by bits 4 and 5 of the opcode.
+    fn get_16bit_destination_register(opcode: u8) -> u8 {
+        (opcode & 0b00110000) >> 4
+    }
+
     /// Check if the destination register is an 8-bit register.
     fn destination_is_8bit_register(opcode: u8) -> bool {
         let destination_register = Cpu::get_destination_register(opcode);
         Self::EIGHT_BIT_REGISTERS.contains(&destination_register)
+    }
+
+    /// Check if the destination register is a 16-bit register.
+    fn destination_is_16bit_register(opcode: u8) -> bool {
+        let destination_register = Cpu::get_16bit_destination_register(opcode);
+        Self::SIXTEEN_BIT_REGISTERS.contains(&destination_register)
     }
 
     /// Check if the source register is an 8-bit register.
