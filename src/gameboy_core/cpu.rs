@@ -141,6 +141,11 @@ impl Cpu {
             v if (v & 0b11001111) == 0b11000101 && Cpu::destination_is_16bit_register(opcode) => {
                 self.push_r16_onto_memory_stack(opcode)
             },
+            v if (v & 0b11001111) == 0b11000001 && Cpu::destination_is_16bit_register(opcode) => {
+                self.pop_r16_from_memory_stack(opcode)
+            },
+            0b11111000 => self.ld_hl_sp_imm8(),
+            0b00001000 => self.ld_imm16_sp(),
             _ => return,
         }
     }
@@ -722,6 +727,51 @@ impl Cpu {
         self.memory_bus
             .write_byte(self.registers.sp, low_byte);
     }
+    
+    /// Pops contents from the memory stack and into register pair qq. 
+    /// First the contents of memory specified by the contents of SP are loaded in the lower portion of qq. 
+    /// Next, the contents of SP are incremented by 1 and the contents of the memory they specify are loaded in the upper portion of qq.
+    /// The contents of SP are automatically incremented by 2.
+    fn pop_r16_from_memory_stack(&mut self, opcode: u8) {
+        let low_byte = self.memory_bus.read_byte(self.registers.sp);
+        self.registers.sp = self.registers.sp.wrapping_add(1);
+        let high_byte = self.memory_bus.read_byte(self.registers.sp);
+        self.registers.sp = self.registers.sp.wrapping_add(1);
+
+        let value = ((high_byte as u16) << 8) | (low_byte as u16);
+
+        let destination_register = Cpu::get_16bit_destination_register(opcode);
+        match destination_register {
+            0b00 => self.registers.set_bc(value),
+            0b01 => self.registers.set_de(value),
+            0b10 => self.registers.set_hl(value),
+            0b11 => self.registers.a = high_byte, // Lower nibble of F is always 0
+            _ => (),
+        }
+    }
+    
+    /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in HL.
+    fn ld_hl_sp_imm8(&mut self) {
+        let imm8 = self.get_imm8() as u16;
+        let (result, carry) = self.registers.sp.overflowing_add(imm8);
+        let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.sp, imm8);
+        self.registers.set_hl(result);
+        self.flags_register.n_flag = false;
+        self.flags_register.z_flag = false;
+        self.flags_register.set_c_flag(carry);
+        self.flags_register.set_h_flag(h_flag);
+
+    }
+    
+    /// Stores the lower byte of SP at address nn specified by the 16-bit immediate operand nn and the upper byte of SP at address nn + 1.
+    fn ld_imm16_sp(&mut self) {
+        let imm16 = self.get_imm16();
+        let sp_lower_byte = (self.registers.sp & 0b011111111) as u8;
+        self.memory_bus.write_byte(imm16, sp_lower_byte);
+        
+        let sp_higher_byte = (self.registers.sp >> 8) as u8;
+        self.memory_bus.write_byte(imm16 + 1, sp_higher_byte);
+    }
 
     /// Get the 8-bit immediate value
     fn get_imm8(&self) -> u8 {
@@ -729,11 +779,11 @@ impl Cpu {
         imm8
     }
 
-    /// Get the following two bytes, in little-endian order
+    /// Get the following two bytes, in little-endian order. Little-endian means the least significant byte comes first in memory.
     fn get_imm16(&self) -> u16 {
-        let lsb = self.memory_bus.read_byte(self.registers.pc) as u16;
-        let msb = self.memory_bus.read_byte(self.registers.pc + 1) as u16;
-        (msb << 8) | lsb
+        let lowest_significant_byte = self.memory_bus.read_byte(self.registers.pc) as u16;
+        let most_significant_byte = self.memory_bus.read_byte(self.registers.pc + 1) as u16;
+        (most_significant_byte << 8) | lowest_significant_byte
     }
 
     fn halt(&self) {

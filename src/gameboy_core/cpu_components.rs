@@ -167,6 +167,14 @@ impl FlagsRegister {
 
         value1_lower_nibble + value2_lower_nibble > 0xF
     }
+
+    /// The same as calculate_h_flag_on_add but for u16 numbers
+    pub fn calculate_h_flag_on_add_u16_numbers(value1: u16, value2: u16) -> bool {
+        let value1_lower_nibble = value1 & 0b00001111;
+        let value2_lower_nibble = value2 & 0b00001111;
+
+        value1_lower_nibble + value2_lower_nibble > 0xF
+    }
     
     /// Half-carry flag (H): Set if no borrow from bit 4.
     /// In subtraction, half-carry is set when the lower nibble of value1 is less than the lower nibble of value2

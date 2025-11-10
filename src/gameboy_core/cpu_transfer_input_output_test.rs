@@ -446,6 +446,32 @@ mod tests {
     }
 
     #[test]
+    fn test_ldhl_sp_imm8() {
+        let mut cpu = Cpu::new();
+
+        // Set up initial SP value
+        cpu.registers.sp = 0xFFF8;
+        // Place immediate signed offset 2 at PC (treated as u8 in memory)
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x02);
+
+        // Test LDHL SP, 2 ; HL ← SP + 2 = 0xFFFA, Z ← 0, N ← 0, H ← 0, CY ← 0
+        let opcode = 0b11111000; // LDHL SP, imm8 (0xF8)
+        cpu.execute(opcode);
+
+        // Verify HL computed from SP + imm8
+        assert_eq!(cpu.registers.get_hl(), 0xFFFA, "HL should contain SP + 2 (0xFFFA)");
+
+        // Verify SP remains unchanged
+        assert_eq!(cpu.registers.sp, 0xFFF8, "SP should remain unchanged after LDHL SP, imm8");
+
+        // Verify flags: Z reset, N reset, H reset, CY reset
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+    }
+
+    #[test]
     fn test_and_a_r() {
         let mut cpu = Cpu::new();
         
@@ -803,5 +829,28 @@ mod tests {
         
         // Verify HL remains unchanged
         assert_eq!(cpu.registers.get_hl(), 0x1234, "HL should remain unchanged");
+    }
+
+    #[test]
+    fn test_ld_imm16_sp() {
+        let mut cpu = Cpu::new();
+
+        // Set SP to FFF8h
+        cpu.registers.sp = 0xFFF8;
+
+        // Place address C100h at PC (little-endian: low byte first)
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x00);
+        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0xC1);
+
+        // Test LD (C100h), SP ; C100h <- F8h, C101h <- FFh
+        let opcode = 0b00001000; // LD (nn), SP (0x08)
+        cpu.execute(opcode);
+
+        // Verify memory contains SP low and high bytes
+        assert_eq!(cpu.memory_bus.read_byte(0xC100), 0xF8, "Memory at 0xC100 should contain SP's low byte (F8h)");
+        assert_eq!(cpu.memory_bus.read_byte(0xC101), 0xFF, "Memory at 0xC101 should contain SP's high byte (FFh)");
+
+        // Verify SP remains unchanged
+        assert_eq!(cpu.registers.sp, 0xFFF8, "SP should remain unchanged after LD (nn), SP");
     }
 }

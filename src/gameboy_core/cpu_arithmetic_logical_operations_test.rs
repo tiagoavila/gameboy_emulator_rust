@@ -194,4 +194,52 @@ mod tests {
         assert_eq!(cpu.flags_register.n_flag, true);
         assert_eq!(cpu.flags_register.c_flag, true);
     }
+
+    #[test]
+    fn test_push_r16_onto_memory_stack() {
+        // PUSH BC ; with SP = FFFEh -> SP becomes FFFCh, memory[FFFCh]=low(C), memory[FFFCh+1]=high(B)
+        let mut cpu = Cpu::new();
+
+        // Set SP and BC
+        cpu.registers.sp = 0xFFFE;
+        cpu.registers.b = 0xAB; // high byte
+        cpu.registers.c = 0xCD; // low byte
+
+        let opcode = 0b11000101; // PUSH BC (0xC5)
+        cpu.execute(opcode);
+
+        // After push, SP should be decremented by 2
+        assert_eq!(cpu.registers.sp, 0xFFFC, "SP should be decremented by 2 after PUSH");
+
+        // Memory at SP (0xFFFC) should contain low byte (C)
+        assert_eq!(cpu.memory_bus.read_byte(0xFFFC), 0xCD, "Memory at 0xFFFC should contain C (low byte)");
+
+        // Memory at SP + 1 (0xFFFD) should contain high byte (B)
+        assert_eq!(cpu.memory_bus.read_byte(0xFFFD), 0xAB, "Memory at 0xFFFD should contain B (high byte)");
+
+        // Registers B and C should remain unchanged
+        assert_eq!(cpu.registers.b, 0xAB);
+        assert_eq!(cpu.registers.c, 0xCD);
+    }
+
+    #[test]
+    fn test_pop_r16_from_memory_stack() {
+        // POP BC ; with SP = FFFCh and memory[FFFCh]=5Fh, memory[FFFD]=3Ch -> B=3Ch, C=5Fh, SP=FFFE
+        let mut cpu = Cpu::new();
+
+        // Set SP and memory values representing the stack
+        cpu.registers.sp = 0xFFFC;
+        cpu.memory_bus.write_byte(0xFFFC, 0x5F); // low byte (C)
+        cpu.memory_bus.write_byte(0xFFFD, 0x3C); // high byte (B)
+
+        let opcode = 0b11000001; // POP BC (0xC1)
+        cpu.execute(opcode);
+
+        // After pop, SP should be incremented by 2
+        assert_eq!(cpu.registers.sp, 0xFFFE, "SP should be incremented by 2 after POP");
+
+        // Registers should be loaded from memory: B = 0x3C, C = 0x5F
+        assert_eq!(cpu.registers.b, 0x3C, "B should contain high byte popped from stack");
+        assert_eq!(cpu.registers.c, 0x5F, "C should contain low byte popped from stack");
+    }
 }
