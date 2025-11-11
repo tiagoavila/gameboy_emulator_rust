@@ -146,6 +146,16 @@ impl Cpu {
             },
             0b11111000 => self.ld_hl_sp_imm8(),
             0b00001000 => self.ld_imm16_sp(),
+            v if (v & 0b11001111) == 0b00001001 && Cpu::destination_is_16bit_register(opcode) => {
+                self.add_hl_r16(opcode)
+            },
+            0b11101000 => self.add_sp_imm8(),
+            v if (v & 0b11001111) == 0b00000011 && Cpu::destination_is_16bit_register(opcode) => {
+                self.inc_r16(opcode)
+            },
+            v if (v & 0b11001111) == 0b00001011 && Cpu::destination_is_16bit_register(opcode) => {
+                self.dec_r16(opcode)
+            },
             _ => return,
         }
     }
@@ -771,6 +781,86 @@ impl Cpu {
         
         let sp_higher_byte = (self.registers.sp >> 8) as u8;
         self.memory_bus.write_byte(imm16 + 1, sp_higher_byte);
+    }
+    
+    /// Adds the contents of a 16-bit register to the contents of register pair HL and stores the results in HL.
+    /// The 16-bit register can be BC, DE, HL or SP.
+    fn add_hl_r16(&mut self, opcode: u8) {
+        let source_register = Cpu::get_16bit_destination_register(opcode);
+        let value = match source_register {
+            0b00 => self.registers.get_bc(),
+            0b01 => self.registers.get_de(),
+            0b10 => self.registers.get_hl(),
+            0b11 => self.registers.sp,
+            _ => 0,
+        };
+        
+        let (result, carry) = self.registers.get_hl().overflowing_add(value);
+        let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.get_hl(), value);
+
+        self.registers.set_hl(result);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_c_flag(carry);
+        self.flags_register.set_h_flag(h_flag);
+    }
+    
+    /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in SP.
+    fn add_sp_imm8(&mut self) {
+        let imm8 = self.get_imm8() as u16;
+        let (result, carry) = self.registers.sp.overflowing_add(imm8);
+        let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.sp, imm8);
+
+        self.registers.sp = result;
+        self.flags_register.n_flag = false;
+        self.flags_register.z_flag = false;
+        self.flags_register.set_c_flag(carry);
+        self.flags_register.set_h_flag(h_flag);
+        self.registers.increment_pc();
+    }
+    
+    /// Increments the contents of a 16-bit register by 1. The 16-bit register can be BC, DE, HL or SP.
+    fn inc_r16(&mut self, opcode: u8) {
+        let source_register = Cpu::get_16bit_destination_register(opcode);
+        let value = match source_register {
+            0b00 => self.registers.get_bc(),
+            0b01 => self.registers.get_de(),
+            0b10 => self.registers.get_hl(),
+            0b11 => self.registers.sp,
+            _ => 0,
+        };
+        
+        let (result, _carry) = value.overflowing_add(1);
+
+        match source_register {
+            0b00 => self.registers.set_bc(result),
+            0b01 => self.registers.set_de(result),
+            0b10 => self.registers.set_hl(result),
+            0b11 => self.registers.sp = result,
+            _ => (),
+        }
+    }
+
+    /// Decrements the contents of a 16-bit register by 1. The 16-bit register can be BC, DE, HL or SP.
+    fn dec_r16(&mut self, opcode: u8) {
+        let source_register = Cpu::get_16bit_destination_register(opcode);
+        let value = match source_register {
+            0b00 => self.registers.get_bc(),
+            0b01 => self.registers.get_de(),
+            0b10 => self.registers.get_hl(),
+            0b11 => self.registers.sp,
+            _ => 0,
+        };
+        
+        let (result, _carry) = value.overflowing_sub(1);
+
+        match source_register {
+            0b00 => self.registers.set_bc(result),
+            0b01 => self.registers.set_de(result),
+            0b10 => self.registers.set_hl(result),
+            0b11 => self.registers.sp = result,
+            _ => (),
+        }
+        
     }
 
     /// Get the 8-bit immediate value

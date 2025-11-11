@@ -242,4 +242,77 @@ mod tests {
         assert_eq!(cpu.registers.b, 0x3C, "B should contain high byte popped from stack");
         assert_eq!(cpu.registers.c, 0x5F, "C should contain low byte popped from stack");
     }
+
+    #[test]
+    fn test_add_hl_r16_examples() {
+        // Example 1: When HL = 8A23h, BC = 0605h,
+        // ADD HL, BC ; HL ← 9028h, H ← 1, N ← 0, CY ← 0
+        let mut cpu1 = Cpu::new();
+        cpu1.registers.set_hl(0x8A23);
+        cpu1.registers.b = 0x06;
+        cpu1.registers.c = 0x05;
+
+        let opcode_add_hl_bc = 0b00001001; // ADD HL, BC
+        cpu1.execute(opcode_add_hl_bc);
+
+        assert_eq!(cpu1.registers.get_hl(), 0x9028);
+        assert_eq!(cpu1.flags_register.h_flag, true);
+        assert_eq!(cpu1.flags_register.n_flag, false);
+        assert_eq!(cpu1.flags_register.c_flag, false);
+
+        // Example 2: Starting again with HL = 8A23h
+        // ADD HL, HL ; HL ← 1446h, H ← 1, N ← 0, CY ← 1
+        let mut cpu2 = Cpu::new();
+        cpu2.registers.set_hl(0x8A23);
+
+        let opcode_add_hl_hl = 0x29; // ADD HL, HL
+        cpu2.execute(opcode_add_hl_hl);
+
+        assert_eq!(cpu2.registers.get_hl(), 0x1446);
+        assert_eq!(cpu2.flags_register.h_flag, true);
+        assert_eq!(cpu2.flags_register.n_flag, false);
+        assert_eq!(cpu2.flags_register.c_flag, true);
+    }
+
+    #[test]
+    fn test_add_sp_imm8() {
+        // ADD SP, 2 ; SP ← 0xFFFA, CY ← 0, H ← 0, N ← 0, Z ← 0
+        let mut cpu = Cpu::new();
+        cpu.registers.sp = 0xFFF8;
+        // Place immediate value 0x02 at PC
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x02);
+
+        let opcode = 0b11101000; // ADD SP, imm8
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.sp, 0xFFFA, "SP should be 0xFFFA after ADD SP, 2");
+        assert_eq!(cpu.flags_register.c_flag, false, "CY flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+    }
+
+    #[test]
+    fn test_inc_r16() {
+        // INC DE ; DE ← 2360h
+        let mut cpu = Cpu::new();
+        cpu.registers.set_de(0x235F);
+
+        let opcode = 0b00010011; // INC DE
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.get_de(), 0x2360, "DE should be 0x2360 after INC DE");
+    }
+
+    #[test]
+    fn test_dec_r16() {
+        // DEC DE ; DE ← 235Eh
+        let mut cpu = Cpu::new();
+        cpu.registers.set_de(0x235F);
+
+        let opcode = 0b00011011; // DEC DE
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.get_de(), 0x235E, "DE should be 0x235E after DEC DE");
+    }
 }

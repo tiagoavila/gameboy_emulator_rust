@@ -168,12 +168,13 @@ impl FlagsRegister {
         value1_lower_nibble + value2_lower_nibble > 0xF
     }
 
-    /// The same as calculate_h_flag_on_add but for u16 numbers
+    /// Half-carry flag (H): Set if carry from bit 11.
+    /// For u16 numbers, we check if there's a carry from bit 11 to bit 12.
     pub fn calculate_h_flag_on_add_u16_numbers(value1: u16, value2: u16) -> bool {
-        let value1_lower_nibble = value1 & 0b00001111;
-        let value2_lower_nibble = value2 & 0b00001111;
+        let value1_bit_11 = value1 & 0x0FFF;
+        let value2_bit_11 = value2 & 0x0FFF;
 
-        value1_lower_nibble + value2_lower_nibble > 0xF
+        value1_bit_11 + value2_bit_11 > 0x0FFF
     }
     
     /// Half-carry flag (H): Set if no borrow from bit 4.
