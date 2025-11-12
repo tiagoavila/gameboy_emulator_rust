@@ -67,7 +67,6 @@ impl Cpu {
             0b01110110 => self.halt(), // HALT
 
             // 8-Bit Transfer and Input/Output Instructions
-                        //0b11011110
             v if (v & 0b11000111) == 0b01000110 && Cpu::destination_is_8bit_register(opcode) => {
                 self.ld_r8_hl(opcode)
             }
@@ -171,7 +170,10 @@ impl Cpu {
                 self.dec_r16(opcode)
             },
             0b11000011 => self.jp_imm16(),
-            _ => return,
+            _ => { 
+                println!("*** Unimplemented opcode: 0x{:02X} - bin: 0b{:08b} ***", opcode, opcode);
+                return;
+            },
         }
     }
 

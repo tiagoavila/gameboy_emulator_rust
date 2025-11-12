@@ -34,7 +34,7 @@ pub fn print_state_if_debug_mode(cpu: &Cpu, opcode: u8) {
 
 /// Prints the CPU registers and flags register to the console
 pub fn print_state(cpu: &Cpu) {
-    println!("\n=== CPU State ===");
+    println!("\n=== Current CPU State before execute function ===");
     println!("8-bit Registers:");
     println!("  A:  0x{:02X} ({})", cpu.registers.a, cpu.registers.a);
     println!("  B:  0x{:02X} ({})", cpu.registers.b, cpu.registers.b);
