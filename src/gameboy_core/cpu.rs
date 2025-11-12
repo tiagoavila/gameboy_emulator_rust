@@ -1,13 +1,15 @@
-use crate::gameboy_core::cpu_components::{FlagsRegister, MemoryBus, Registers};
+use crate::gameboy_core::{cpu_components::{FlagsRegister, MemoryBus, Registers}, cpu_utils};
 
 pub struct Cpu {
     pub registers: Registers,
     pub flags_register: FlagsRegister,
     pub memory_bus: MemoryBus,
+    pub is_debug_mode: bool,
 }
 
 impl Cpu {
-    const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
+    const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0x0100;
+    // const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
     const EIGHT_BIT_REGISTERS: [u8; 7] = [0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b111];
     const SIXTEEN_BIT_REGISTERS: [u8; 4] = [0b00, 0b01, 0b10, 0b11];
 
@@ -16,15 +18,27 @@ impl Cpu {
             registers: Registers::new(),
             flags_register: FlagsRegister::new(),
             memory_bus: MemoryBus::new(),
+            is_debug_mode: false,
         }
+    }
+
+    /// Start the emulator with the provided ROM binary data.
+    pub fn start(rom_binary: Vec<u8>, is_debug_mode: bool) -> Self {
+        let mut cpu = Self::new();
+        cpu.load_rom(rom_binary);
+        cpu.is_debug_mode = is_debug_mode;
+        return cpu;
     }
 
     pub fn tick(&mut self) {
         let opcode = self.fetch_opcode();
+
+        cpu_utils::print_state_if_debug_mode(self, opcode);
+
         self.registers.increment_pc();
         self.execute(opcode);
     }
-
+    
     fn fetch_opcode(&mut self) -> u8 {
         self.memory_bus.read_byte(self.registers.pc)
     }
@@ -156,6 +170,7 @@ impl Cpu {
             v if (v & 0b11001111) == 0b00001011 && Cpu::destination_is_16bit_register(opcode) => {
                 self.dec_r16(opcode)
             },
+            0b11000011 => self.jp_imm16(),
             _ => return,
         }
     }
@@ -863,6 +878,13 @@ impl Cpu {
         
     }
 
+    /// Loads the 16-bit immediate value to the program counter (PC).
+    fn jp_imm16(&mut self) {
+        let imm16 = self.get_imm16();
+        self.registers.pc = imm16;
+        self.registers.increment_pc_twice();
+    }
+
     /// Get the 8-bit immediate value
     fn get_imm8(&self) -> u8 {
         let imm8 = self.memory_bus.read_byte(self.registers.pc);
@@ -926,5 +948,9 @@ impl Cpu {
     fn write_memory_value_at_hl(&mut self, value: u8) {
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, value);
+    }
+    
+    fn load_rom(&mut self, rom_binary: Vec<u8>) {
+        self.memory_bus.copy_from_binary(rom_binary);
     }
 }

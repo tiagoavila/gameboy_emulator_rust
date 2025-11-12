@@ -216,4 +216,9 @@ impl MemoryBus {
     pub fn write_byte(&mut self, address: u16, value: u8) {
         self.memory[address as usize] = value;
     }
+    
+    pub fn copy_from_binary(&mut self, rom_binary: Vec<u8>) {
+        let start_ram_address = 0 as usize;
+        self.memory[start_ram_address..(start_ram_address + rom_binary.len())].copy_from_slice(&rom_binary);
+    }
 }
