@@ -192,6 +192,11 @@ impl FlagsRegister {
         self.z_flag = result == 0;
     }
     
+    /// The same as set_z_flag but for u16 values
+    pub fn set_z_flag_u16(&mut self, result: u16) {
+        self.z_flag = result == 0;
+    }
+    
     /// Returns the c_flag as u8 to be used in ADC instructions
     pub fn get_c_flag_u8(&self) -> u8 {
         if self.c_flag {

@@ -367,13 +367,30 @@ mod tests {
     fn test_rla() {
         // RLA ; A ← 2Bh, C ← 1, Z ← 0, H ← 0, N ← 0
         let mut cpu = Cpu::new();
-        cpu.registers.a = 0b10010101; // 0x95
+        cpu.registers.a = 0b00010101; // 0x95
         cpu.flags_register.c_flag = true;
 
         let opcode = 0b00010111; // RLA
         cpu.execute(opcode);
 
         assert_eq!(cpu.registers.a, 0b00101011, "A should be 0b00101011 (0x2B) after RLA");
+        assert_eq!(cpu.flags_register.c_flag, false, "C flag should be 0");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_rla_c_flag_false() {
+        // RLA ; A ← 2Bh, C ← 1, Z ← 0, H ← 0, N ← 0
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0b10010101; // 0x95
+        cpu.flags_register.c_flag = false;
+
+        let opcode = 0b00010111; // RLA
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.a, 0b00101010, "A should be 0b00101010 (0x2A) after RLA");
         assert_eq!(cpu.flags_register.c_flag, true, "C flag should be 1");
         assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
         assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
@@ -426,6 +443,48 @@ mod tests {
         cpu.execute(opcode);
 
         assert_eq!(cpu.registers.a, 0b11000000, "A should be 0b11000000 (0xC0) after RRA with CY=1");
+        assert_eq!(cpu.flags_register.c_flag, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_rlc_r8() {
+        // RLC B ; B ← 0b00001011, CY ← 1, Z ← 0, H ← 0, N ← 0
+        // When B = 0b10000101
+        let mut cpu = Cpu::new();
+        cpu.registers.b = 0b10000101;
+
+        let opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x00); // RLC B (0xCB 0x00)
+        cpu.registers.increment_pc();
+
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.b, 0b00001010, "B should be 0b00001010 after RLC B");
+        assert_eq!(cpu.flags_register.c_flag, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_rlc_hl() {
+        // RLC (HL) ; Memory at HL ← 0b00001011, CY ← 1, Z ← 0, H ← 0, N ← 0
+        // When memory at HL = 0b10000101
+        let mut cpu = Cpu::new();
+        cpu.registers.set_hl(0x1234);
+        cpu.memory_bus.write_byte(0x1234, 0b10000101);
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.memory_bus.write_byte(cpu.registers.pc, cb_opcode); // CB prefix
+        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0b00000110); // RLC (HL) (0xCB 0x06)
+
+        cpu.registers.increment_pc(); // Move to CB opcode
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0b00001010, "Memory at HL should be 0b00001010 after RLC (HL)");
         assert_eq!(cpu.flags_register.c_flag, true, "CY flag should be 1");
         assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
         assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
