@@ -315,4 +315,120 @@ mod tests {
 
         assert_eq!(cpu.registers.get_de(), 0x235E, "DE should be 0x235E after DEC DE");
     }
+
+    #[test]
+    fn test_ret() {
+        // RET ; Returns to address 0x8003
+        // When a CALL instruction is executed at 0x8000, it pushes the return address (0x8003) onto the stack
+        // and then RET pops that address back into PC
+        let mut cpu = Cpu::new();
+
+        // Set up the return address on the stack at SP
+        // The return address should be split into low byte and high byte
+        cpu.registers.sp = 0xFFFA;
+        let return_address = 0x8003u16;
+        let low_byte = (return_address & 0x00FF) as u8;
+        let high_byte = ((return_address >> 8) & 0x00FF) as u8;
+
+        // Push return address onto stack (as CALL would do)
+        cpu.memory_bus.write_byte(cpu.registers.sp, low_byte);
+        cpu.registers.sp = cpu.registers.sp.wrapping_add(1);
+        cpu.memory_bus.write_byte(cpu.registers.sp, high_byte);
+        cpu.registers.sp = cpu.registers.sp.wrapping_sub(1); // Reset SP to point to low byte
+
+        let opcode = 0b11001001; // RET (0xC9)
+        cpu.execute(opcode);
+
+        // After RET, PC should be set to the return address (0x8003)
+        assert_eq!(cpu.registers.pc, 0x8003, "PC should be 0x8003 after RET");
+
+        // SP should be incremented by 2
+        assert_eq!(cpu.registers.sp, 0xFFFC, "SP should be incremented by 2 after RET (wraps around due to u16)");
+    }
+
+    #[test]
+    fn test_rlca() {
+        // RLCA ; A ← 0Ah, CY ← 1, Z ← 0, H ← 0, N ← 0
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0b10000101;
+        cpu.flags_register.c_flag = false;
+
+        let opcode = 0b00000111; // RLCA
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.a, 0b00001010, "A should be 0b00001010 after RLCA");
+        assert_eq!(cpu.flags_register.c_flag, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_rla() {
+        // RLA ; A ← 2Bh, C ← 1, Z ← 0, H ← 0, N ← 0
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0b10010101; // 0x95
+        cpu.flags_register.c_flag = true;
+
+        let opcode = 0b00010111; // RLA
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.a, 0b00101011, "A should be 0b00101011 (0x2B) after RLA");
+        assert_eq!(cpu.flags_register.c_flag, true, "C flag should be 1");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_rrca() {
+        // RRCA ; A ← 9Dh, CY ← 1, Z ← 0, H ← 0, N ← 0
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0b00111011; // 0x3B
+        cpu.flags_register.c_flag = false;
+
+        let opcode = 0b00001111; // RRCA
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.a, 0b00011101, "A should be 0b00011101 (0x9D) after RRCA");
+        assert_eq!(cpu.flags_register.c_flag, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_rra() {
+        // RRA ; A ← 40h, CY ← 1, Z ← 0, H ← 0, N ← 0
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0b10000001; // 0x81
+        cpu.flags_register.c_flag = false;
+
+        let opcode = 0b00011111; // RRA
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.a, 0b01000000, "A should be 0b01000000 (0x40) after RRA");
+        assert_eq!(cpu.flags_register.c_flag, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_rra_with_carry() {
+        // RRA ; A ← C0h, CY ← 1, Z ← 0, H ← 0, N ← 0
+        // When A = 81h and CY = 1 (same initial A value, but with CY = 1)
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0b10000001; // 0x81
+        cpu.flags_register.c_flag = true;
+
+        let opcode = 0b00011111; // RRA
+        cpu.execute(opcode);
+
+        assert_eq!(cpu.registers.a, 0b11000000, "A should be 0b11000000 (0xC0) after RRA with CY=1");
+        assert_eq!(cpu.flags_register.c_flag, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z_flag, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h_flag, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n_flag, false, "N flag should be 0");
+    }
 }

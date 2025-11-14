@@ -8,8 +8,7 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0x0100;
-    // const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
+    const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
     const EIGHT_BIT_REGISTERS: [u8; 7] = [0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b111];
     const SIXTEEN_BIT_REGISTERS: [u8; 4] = [0b00, 0b01, 0b10, 0b11];
 
@@ -170,6 +169,12 @@ impl Cpu {
                 self.dec_r16(opcode)
             },
             0b11000011 => self.jp_imm16(),
+            0b11001001 => self.ret(),
+            0b00000111 => self.rlca(),
+            0b00010111 => self.rla(),
+            0b00001111 => self.rrca(),
+            0b00011111 => self.rra(),
+            0xCB => self.execute_cb_prefix_instructions(),
             _ => { 
                 println!("*** Unimplemented opcode: 0x{:02X} - bin: 0b{:08b} ***", opcode, opcode);
                 return;
@@ -885,6 +890,105 @@ impl Cpu {
         let imm16 = self.get_imm16();
         self.registers.pc = imm16;
         self.registers.increment_pc_twice();
+    }
+    
+    /// Pops from the memory stack the PC value pushed when the subroutine was called, returning control to the source program. 
+    /// In this case, the contents of the address specified by the SP are loaded in the lower-order byte of the PC, 
+    /// and the content of the SP is incremented by 1. The contents of the address specified by the new SP
+    /// value are then loaded in the higher-order byte of the PC, and the SP is again incremented by 1. (The
+    /// value of SP is 2 larger than before instruction execution.) 
+    fn ret(&mut self) {
+        let low_byte_pc = self.memory_bus.read_byte(self.registers.sp) as u16;
+
+        self.registers.increment_sp();
+        let high_byte_pc = self.memory_bus.read_byte(self.registers.sp) as u16;
+
+        self.registers.increment_sp();
+        
+        self.registers.pc = (high_byte_pc << 8) | low_byte_pc;
+    }
+    
+    /// Rotates the contents of register A to the left. 
+    /// That is, the contents of bit 0 are copied to bit 1 and the previous contents of bit 1 (the contents before the copy operation)
+    /// are copied to bit 2. The same operation is repeated in sequence for the rest of the register. 
+    /// The contents of bit 7 are placed in CY.
+    fn rlca(&mut self) {
+        let bit7_register_a = self.registers.a >> 7;
+        self.registers.a <<= 1;
+        self.flags_register.set_c_flag(bit7_register_a == 1);
+        self.flags_register.set_z_flag(self.registers.a);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_h_flag(false);
+    }
+
+    /// Rotate the contents of register A to the left, through the carry (CY) flag. That is, the contents of bit 0 are copied to bit 1,
+    /// and the previous contents of bit 1 (before the copy operation) are copied to bit 2. The same operation is repeated in sequence for the rest 
+    /// of the register.
+    /// The previous contents of the carry flag are copied to bit 0.
+    fn rla(&mut self) {
+        let bit7_register_a = self.registers.a >> 7;
+        self.registers.a <<= 1;
+
+        if self.flags_register.c_flag {
+            self.registers.a |= 0b00000001;
+        }
+
+        self.flags_register.set_c_flag(bit7_register_a == 1);
+        self.flags_register.set_z_flag(self.registers.a);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_h_flag(false);
+    }
+
+    /// Rotate the contents of register A to the right. That is, the contents of bit 7 are copied to bit 6 and the previous contents of bit 6
+    /// (the contents before the copy operation) are copied to bit 5. The same operation is repeated in sequence for the rest of the register.
+    /// The contents of bit 0 are placed in CY.
+    fn rrca(&mut self) {
+        let bit0_register_a = self.registers.a & 0b00000001;
+        self.registers.a >>= 1;
+        self.flags_register.set_c_flag(bit0_register_a == 1);
+        self.flags_register.set_z_flag(self.registers.a);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_h_flag(false);
+    }
+
+    /// Rotate the contents of register A to the right, through the carry (CY) flag.
+    /// That is, the contents of bit 7 are copied to bit 6, and the previous contents of bit 6 (before the copy) are copied to bit 5. 
+    /// The same operation is repeated in sequence for the rest of the register. 
+    /// The previous contents of the carry flag are copied to bit 7.
+    fn rra(&mut self) {
+        let bit0_register_a = self.registers.a & 0b00000001;
+        self.registers.a >>= 1;
+
+        if self.flags_register.c_flag {
+            self.registers.a |= 0b10000000;
+        }
+
+        self.flags_register.set_c_flag(bit0_register_a == 1);
+        self.flags_register.set_z_flag(self.registers.a);
+        self.flags_register.n_flag = false;
+        self.flags_register.set_h_flag(false);
+    }
+
+    fn execute_cb_prefix_instructions(&mut self) { 
+        let cb_opcode = self.fetch_opcode();
+        self.registers.increment_pc();
+        
+        match cb_opcode {
+            v if (v & 0b11111000) == 0b00000000 && Cpu::source_is_8bit_register(cb_opcode) => {
+                self.rlc_r8(cb_opcode)
+            },
+            _ => {
+                println!("*** Unimplemented CB prefix opcode: 0x{:02X} - bin: 0b{:08b} ***", cb_opcode, cb_opcode);
+                return;
+            }
+        }
+    }
+
+    fn rlc_r8(&mut self, cb_opcode: u8) {
+        let register = Cpu::get_source_register(cb_opcode);
+        let mut value = self.registers.get_8bit_register_value(source);
+        
+        self.registers.set_8bit_register_value(register, value);
     }
 
     /// Get the 8-bit immediate value

@@ -1,6 +1,6 @@
 use std::mem;
 
-use crate::gameboy_core::constants::MEMORY_SIZE;
+use crate::gameboy_core::constants::{INITIAL_PC, MEMORY_SIZE};
 
 pub struct Registers {
     pub a: u8,
@@ -43,7 +43,7 @@ impl Registers {
             h: 0,
             l: 0,
             sp: 0,
-            pc: 0x100,
+            pc: INITIAL_PC,
         }
     }
 
@@ -53,6 +53,10 @@ impl Registers {
 
     pub fn increment_pc_twice(&mut self) {
         self.pc += 2;
+    }
+
+    pub fn increment_sp(&mut self) {
+        self.sp = self.sp.wrapping_add(1);
     }
 
     pub fn set_8bit_register_value(&mut self, register: u8, value: u8) {
