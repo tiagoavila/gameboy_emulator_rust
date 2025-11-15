@@ -1,23 +1,21 @@
-use crate::gameboy_core::{cpu_components::{FlagsRegister, MemoryBus, Registers}, cpu_utils};
+use crate::gameboy_core::{constants::{EIGHT_BIT_REGISTERS, SIXTEEN_BIT_REGISTERS, START_ADDRESS_FOR_LOAD_INSTRUCTIONS}, cpu_components::{FlagsRegister, MemoryBus, Registers}, cpu_utils, ppu::{self, Ppu}};
 
 pub struct Cpu {
     pub registers: Registers,
     pub flags_register: FlagsRegister,
     pub memory_bus: MemoryBus,
     pub is_debug_mode: bool,
+    pub ppu: Ppu
 }
 
 impl Cpu {
-    const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
-    const EIGHT_BIT_REGISTERS: [u8; 7] = [0b000, 0b001, 0b010, 0b011, 0b100, 0b101, 0b111];
-    const SIXTEEN_BIT_REGISTERS: [u8; 4] = [0b00, 0b01, 0b10, 0b11];
-
     pub fn new() -> Self {
         Self {
             registers: Registers::new(),
             flags_register: FlagsRegister::new(),
             memory_bus: MemoryBus::new(),
             is_debug_mode: false,
+            ppu: Ppu::new()
         }
     }
 
@@ -248,7 +246,7 @@ impl Cpu {
     /// the range FF00h-FFFFh specified by register C.
     fn ld_a_c(&mut self) {
         let c_register_value = self.registers.c as u16;
-        let ram_address = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register_value;
+        let ram_address = START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register_value;
         let value = self.memory_bus.read_byte(ram_address);
         self.registers.a = value;
     }
@@ -257,7 +255,7 @@ impl Cpu {
     /// range FF00h-FFFFh specified by register C.
     fn ld_c_a(&mut self) {
         let c_register_value = self.registers.c as u16;
-        let ram_address = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register_value;
+        let ram_address = START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register_value;
         self.memory_bus.write_byte(ram_address, self.registers.a);
     }
 
@@ -267,7 +265,7 @@ impl Cpu {
     /// automatically reflected in the machine language.
     fn ld_a_imm8(&mut self) {
         let imm8 = self.get_imm8() as u16;
-        let address_to_read_from = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + imm8;
+        let address_to_read_from = START_ADDRESS_FOR_LOAD_INSTRUCTIONS + imm8;
         let value = self.memory_bus.read_byte(address_to_read_from);
         self.registers.a = value;
         self.registers.increment_pc();
@@ -279,7 +277,7 @@ impl Cpu {
     /// lower-order 8 bits are automatically reflected in the machine language.
     fn ld_imm8_a(&mut self) {
         let imm8 = self.get_imm8() as u16;
-        let address_to_write = Self::START_ADDRESS_FOR_LOAD_INSTRUCTIONS + imm8;
+        let address_to_write = START_ADDRESS_FOR_LOAD_INSTRUCTIONS + imm8;
         self.memory_bus
             .write_byte(address_to_write, self.registers.a);
         self.registers.increment_pc();
@@ -1071,19 +1069,19 @@ impl Cpu {
     /// Check if the destination register is an 8-bit register.
     fn destination_is_8bit_register(opcode: u8) -> bool {
         let destination_register = Cpu::get_destination_register(opcode);
-        Self::EIGHT_BIT_REGISTERS.contains(&destination_register)
+        EIGHT_BIT_REGISTERS.contains(&destination_register)
     }
 
     /// Check if the destination register is a 16-bit register.
     fn destination_is_16bit_register(opcode: u8) -> bool {
         let destination_register = Cpu::get_16bit_destination_register(opcode);
-        Self::SIXTEEN_BIT_REGISTERS.contains(&destination_register)
+        SIXTEEN_BIT_REGISTERS.contains(&destination_register)
     }
 
     /// Check if the source register is an 8-bit register.
     fn source_is_8bit_register(opcode: u8) -> bool {
         let source_register = Cpu::get_source_register(opcode);
-        Self::EIGHT_BIT_REGISTERS.contains(&source_register)
+        EIGHT_BIT_REGISTERS.contains(&source_register)
     }
 
     /// Reads the content of memory specified by the contents of register pair HL
@@ -1100,5 +1098,11 @@ impl Cpu {
     
     fn load_rom(&mut self, rom_binary: Vec<u8>) {
         self.memory_bus.copy_from_binary(rom_binary);
+    }
+}
+
+impl Default for Cpu {
+    fn default() -> Self {
+        Self::new()
     }
 }
