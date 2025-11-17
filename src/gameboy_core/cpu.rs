@@ -1121,6 +1121,10 @@ impl Cpu {
     fn load_rom(&mut self, rom_binary: Vec<u8>) {
         self.memory_bus.copy_from_binary(rom_binary);
     }
+    
+    pub fn render_screen(&mut self) {
+        self.ppu.render_screen(&mut self.memory_bus);
+    }
 }
 
 impl Default for Cpu {

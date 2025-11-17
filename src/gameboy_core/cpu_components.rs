@@ -228,4 +228,18 @@ impl MemoryBus {
         let start_ram_address = 0 as usize;
         self.memory[start_ram_address..(start_ram_address + rom_binary.len())].copy_from_slice(&rom_binary);
     }
+
+    /// Gets a reference to the VRAM (Video RAM) region
+    pub fn get_vram(&self) -> &[u8] {
+        &self.memory[0x8000..=0x9FFF]
+    }
+    
+    pub fn get_vram_tile_data(&self) -> &[u8] {
+        &self.memory[0x8000..=0x97FF]
+    }
+
+    /// Gets a mutable reference to the VRAM region
+    pub fn get_vram_mut(&mut self) -> &mut [u8] {
+        &mut self.memory[0x8000..=0x9FFF]
+    }
 }
