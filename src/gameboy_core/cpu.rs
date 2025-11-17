@@ -1036,9 +1036,13 @@ impl Cpu {
 
     /// Jumps to the address by adding the signed 8-bit immediate value to the PC.
     /// The jump range is -128 to +127 bytes from the current position.
+    /// The below logic uses 2's complement to handle negative offsets. When a number is parsed to i8 or i16, Rust automatically
+    /// interprets it as a signed number in 2's complement form. 
+    /// Example: 0xF6 as u8 = 246 
+    ///          0xF6 as i8 = -10 (two's complement interpretation).
     fn jr_imm8(&mut self) {
         // Read the signed offset (PC is already at opcode + 1)
-        let imm8 = self.get_imm8() as i8;
+        let imm8 = self.get_imm8() as i8; // Parse to i8 to handle
         self.registers.increment_pc();// Move past the offset byte
 
         // Add the signed offset to PC
