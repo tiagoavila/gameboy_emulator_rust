@@ -5,7 +5,8 @@ pub struct Cpu {
     pub flags_register: FlagsRegister,
     pub memory_bus: MemoryBus,
     pub is_debug_mode: bool,
-    pub ppu: Ppu
+    pub ppu: Ppu,
+    pub cycles: u64,
 }
 
 impl Cpu {
@@ -15,7 +16,8 @@ impl Cpu {
             flags_register: FlagsRegister::new(),
             memory_bus: MemoryBus::new(),
             is_debug_mode: false,
-            ppu: Ppu::new()
+            ppu: Ppu::new(),
+            cycles: 0,
         }
     }
 
@@ -172,6 +174,7 @@ impl Cpu {
             0b00010111 => self.rla(),
             0b00001111 => self.rrca(),
             0b00011111 => self.rra(),
+            0b00011000 => self.jr_imm8(),
             0xCB => self.execute_cb_prefix_instructions(),
             _ => { 
                 println!("*** Unimplemented opcode: 0x{:02X} - bin: 0b{:08b} ***", opcode, opcode);
@@ -1029,6 +1032,21 @@ impl Cpu {
         let value = self.memory_bus.read_byte(hl);
         let rotated_value = self.rotate_left_and_update_flags(value);
         self.memory_bus.write_byte(hl, rotated_value);
+    }
+
+    /// Jumps to the address by adding the signed 8-bit immediate value to the PC.
+    /// The jump range is -128 to +127 bytes from the current position.
+    fn jr_imm8(&mut self) {
+        // Read the signed offset (PC is already at opcode + 1)
+        let imm8 = self.get_imm8() as i8;
+        self.registers.increment_pc();// Move past the offset byte
+
+        // Add the signed offset to PC
+        // We need to convert i8 to i16 first to handle negative numbers correctly
+        self.registers.pc = (self.registers.pc as i16).wrapping_add(imm8 as i16) as u16;
+
+        // Cycles: 12 (3 machine cycles)
+        self.cycles += 12;
     }
 
     /// Get the 8-bit immediate value

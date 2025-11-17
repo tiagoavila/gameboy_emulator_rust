@@ -7,7 +7,8 @@ const WIDTH: usize = 320;
 const HEIGHT: usize = 288;
 
 fn main() {
-    let rom_file = "tests/cpu_instrs.gb";
+    // let rom_file = "tests/cpu_instrs.gb";
+    let rom_file = "tests/nintendo_logo.gb";
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();
 
     let mut cpu = gameboy_core::cpu::Cpu::start(rom_binary, true);

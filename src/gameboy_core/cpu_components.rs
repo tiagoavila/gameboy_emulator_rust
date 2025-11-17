@@ -1,5 +1,3 @@
-use std::mem;
-
 use crate::gameboy_core::constants::{INITIAL_PC, MEMORY_SIZE};
 
 pub struct Registers {
@@ -48,11 +46,11 @@ impl Registers {
     }
 
     pub fn increment_pc(&mut self) {
-        self.pc += 1;
+        self.pc = self.pc.wrapping_add(1);
     }
 
     pub fn increment_pc_twice(&mut self) {
-        self.pc += 2;
+        self.pc = self.pc.wrapping_add(2);
     }
 
     pub fn increment_sp(&mut self) {
