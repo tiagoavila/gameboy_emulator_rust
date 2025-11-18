@@ -1,6 +1,6 @@
 use crate::gameboy_core::{
     cpu::Cpu,
-    ppu::{BGP, LCDC, TILE_DATA_START, TILE_MAP_0_START},
+    constants::{BGP, LCDC, TILE_DATA_START, TILE_MAP_AREA_0_START},
 };
 
 // Simple 8x8 font tiles for letters N, I, T, E, N, D, O
@@ -71,6 +71,9 @@ const TILE_O: [u8; 16] = [
     0x7E, 0x00, //  ██████
 ];
 
+// A representation of the Game Boy "draw"
+const TILE_GAME_BOY_DRAW: [u8; 16] = [ 0x3C, 0x7E, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x7E, 0x5E, 0x7E, 0x0A, 0x7C, 0x56, 0x38, 0x7C];
+
 pub fn setup_nintendo_display(cpu: &mut Cpu) {
     // Enable LCD and BG display
     // Bit 7: LCD Enable, Bit 0: BG Display Enable
@@ -124,7 +127,7 @@ pub fn setup_nintendo_display(cpu: &mut Cpu) {
 
     // Write tile indices to background map to spell "NINTENDO"
     // Center it roughly on screen (row 8, starting at column 6)
-    let start_pos = TILE_MAP_0_START + (8 * 32) + 6;
+    let start_pos = TILE_MAP_AREA_0_START + (8 * 32) + 6;
 
     cpu.memory_bus.write_byte(start_pos + 0, 0); // N (tile 0)
     cpu.memory_bus.write_byte(start_pos + 1, 1); // I (tile 1)
@@ -138,7 +141,7 @@ pub fn setup_nintendo_display(cpu: &mut Cpu) {
 
 #[cfg(test)]
 mod tests {
-    use crate::gameboy_core::{ppu::{BGP, LCDC, TILE_DATA_START, TILE_MAP_0_START}, ppu_test::setup_nintendo_display};
+    use crate::gameboy_core::{constants::{BGP, LCDC, TILE_DATA_START, TILE_MAP_AREA_0_START}, ppu_test::setup_nintendo_display};
 
     #[test]
     fn render_nintendo_logo_tiles() {
@@ -158,7 +161,7 @@ mod tests {
         assert_eq!(cpu.memory_bus.read_byte(TILE_DATA_START), 0xFF);
 
         // Verify background map has correct tile indices
-        let start_pos = TILE_MAP_0_START + (8 * 32) + 6;
+        let start_pos = TILE_MAP_AREA_0_START + (8 * 32) + 6;
         assert_eq!(cpu.memory_bus.read_byte(start_pos + 0), 0); // N
         assert_eq!(cpu.memory_bus.read_byte(start_pos + 1), 1); // I
         assert_eq!(cpu.memory_bus.read_byte(start_pos + 7), 7); // O

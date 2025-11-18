@@ -1,4 +1,4 @@
-use crate::gameboy_core::constants::{INITIAL_PC, MEMORY_SIZE};
+use crate::gameboy_core::constants::{INITIAL_PC, LCDC, MEMORY_SIZE};
 
 pub struct Registers {
     pub a: u8,
@@ -234,6 +234,7 @@ impl MemoryBus {
         &self.memory[0x8000..=0x9FFF]
     }
     
+    /// Gets a reference to the VRAM tile data region which covers addressess $8000-$97FF
     pub fn get_vram_tile_data(&self) -> &[u8] {
         &self.memory[0x8000..=0x97FF]
     }
@@ -241,5 +242,10 @@ impl MemoryBus {
     /// Gets a mutable reference to the VRAM region
     pub fn get_vram_mut(&mut self) -> &mut [u8] {
         &mut self.memory[0x8000..=0x9FFF]
+    }
+    
+    /// Get LCDC register value
+    pub fn get_lcdc_register(&self) -> u8 {
+        self.read_byte(LCDC)
     }
 }

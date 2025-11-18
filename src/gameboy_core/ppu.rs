@@ -1,22 +1,6 @@
 use crate::gameboy_core::{
-    constants::{SCREEN_HEIGHT, SCREEN_WIDTH},
-    cpu_components,
-    ppu_components::{Tile, TilePixelValue},
+    constants::{SCREEN_HEIGHT, SCREEN_WIDTH}, cpu_components, ppu, ppu_components::{self, Tile, TilePixelValue}
 };
-
-// Tile data is stored in VRAM in the memory area at $8000-$97FF;
-pub const TILE_DATA_START: u16 = 0x8000;
-pub const TILE_DATA_END: u16 = 0x97FF;
-
-// The Game Boy contains two 32×32 tile maps in VRAM at the memory areas $9800-$9BFF and $9C00-$9FFF.
-// Any of these maps can be used to display the Background or the Window.
-pub const TILE_MAP_0_START: u16 = 0x9800;
-pub const TILE_MAP_0_END: u16 = 0x9BFF;
-pub const TILE_MAP_1_START: u16 = 0x9C00;
-pub const TILE_MAP_1_END: u16 = 0x9FFF;
-
-pub const LCDC: u16 = 0xFF40; // LCD Control register
-pub const BGP: u16 = 0xFF47; // Background palette
 
 pub struct Ppu {
     pub screen: [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT], // 144 rows of 160 pixels
@@ -29,8 +13,10 @@ impl Ppu {
         }
     }
 
-    pub fn render_screen(&self, memory_bus: &mut cpu_components::MemoryBus) {
-        self.read_tiles(memory_bus);
+    pub fn render_screen(&self, memory_bus: &cpu_components::MemoryBus) {
+        let tiles = self.read_tiles(memory_bus);
+        let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(memory_bus);
+        self.read_tile_map(memory_bus, &lcdc_register);
     }
 
     fn read_tiles(&self, memory_bus: &cpu_components::MemoryBus) -> [Tile; 384] {
@@ -87,5 +73,13 @@ impl Ppu {
         }
 
         tiles
+    }
+    
+    fn read_tile_map(&self, memory_bus: &cpu_components::MemoryBus, lcdc: &ppu_components::LcdcRegister) -> [u8; 1024] {
+        [0; 1024]
+    }
+    
+    pub fn get_lcdc_register(&self) {
+        
     }
 }

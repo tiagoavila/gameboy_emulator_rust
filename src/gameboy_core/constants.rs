@@ -30,3 +30,31 @@ pub const OAM_START: u16 = 0xFE00;
 
 /// End of the Object Attribute Memory (OAM) region in the Gameboy memory map.
 pub const OAM_END: u16 = 0xFE9F;
+
+// Tile data is stored in VRAM in the memory area at $8000-$97FF;
+pub const TILE_DATA_START: u16 = 0x8000;
+pub const TILE_DATA_END: u16 = 0x97FF;
+
+// There are two possible addressing modes for BG and Window data:
+// 1. $8000-$8FFF: Unsigned indices (0 to 255)
+// 2. $8800-$97FF: Signed indices (-128 to 127)
+// Tiles are always indexed using an 8-bit integer, but the addressing method may differ: 
+// The “$8000 method” uses $8000 as its base pointer and uses an unsigned addressing, meaning that tiles 0-127 are in block 0, and tiles 128-255 are in block 1.
+// The “$8800 method” uses $9000 as its base pointer and uses a signed addressing, meaning that tiles 0-127 are in block 2, and tiles -128 to -1 are in block 1; or, to put it differently, “$8800 addressing” takes tiles 0-127 from block 2 and tiles 128-255 from block 1.
+// (You can notice that block 1 is shared by both addressing methods)
+// 
+// Objects always use “$8000 addressing”, but the BG and Window can use either mode, controlled by LCDC bit 4.
+pub const BG_WINDOW_DATA_AREA_0_START: u16 = 0x8000;
+pub const BG_WINDOW_DATA_AREA_0_END: u16 = 0x8FFF;
+pub const BG_WINDOW_DATA_AREA_1_START: u16 = 0x8800;
+pub const BG_WINDOW_DATA_AREA_1_END: u16 = 0x97FF;
+
+// The Game Boy contains two 32×32 tile maps in VRAM at the memory areas $9800-$9BFF and $9C00-$9FFF.
+// Any of these maps can be used to display the Background or the Window.
+pub const TILE_MAP_AREA_0_START: u16 = 0x9800;
+pub const TILE_MAP_AREA_0_END: u16 = 0x9BFF;
+pub const TILE_MAP_AREA_1_START: u16 = 0x9C00;
+pub const TILE_MAP_AREA_1_END: u16 = 0x9FFF;
+
+pub const LCDC: u16 = 0xFF40; // LCD Control register
+pub const BGP: u16 = 0xFF47; // Background palette
