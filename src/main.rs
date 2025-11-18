@@ -1,4 +1,4 @@
-use crate::gameboy_core::{constants::{SCREEN_HEIGHT, SCREEN_WIDTH}, cpu_utils};
+use crate::gameboy_core::{constants::{SCREEN_HEIGHT, SCREEN_WIDTH}, cpu_utils, ppu_components::{Tile, TilePixelValue}};
 use minifb::{Key, Window, WindowOptions};
 
 pub mod gameboy_core;
@@ -22,10 +22,73 @@ fn main() {
         panic!("{}", e);
     });
 
-    let mut buffer: Vec<u32> = vec![0; SCREEN_WIDTH * SCREEN_HEIGHT * SCREEN_SCALE * SCREEN_SCALE];
+    let mut buffer: Vec<u32> = vec![0xFFFFFF; SCREEN_WIDTH * SCREEN_HEIGHT * SCREEN_SCALE * SCREEN_SCALE];
+
+    // Create a tile with the letter "T" and render it to the buffer
+    let tile_t = create_tile_of_colored_square();
+    render_tile_to_buffer(&tile_t, &mut buffer, 0, 0);
 
     // Run the event loop
     run_cpu_with_keyboard(&mut cpu, &mut window, &mut buffer);
+}
+
+/// Creates a tile with a colored square: outer border, middle frame, and inner square
+fn create_tile_of_colored_square() -> Tile {
+    let mut tile = Tile::new();
+    
+    // Color scheme:
+    // Outside (empty): TilePixelValue::Zero (white)
+    // Border: TilePixelValue::Three (black)
+    // Middle frame: TilePixelValue::Two (dark gray)
+    // Inner square: TilePixelValue::One (light gray)
+    
+    for row in 0..8 {
+        for col in 0..8 {
+            let pixel = if row == 0 || row == 7 || col == 0 || col == 7 {
+                // Border (outermost)
+                TilePixelValue::Three
+            } else if row == 1 || row == 6 || col == 1 || col == 6 {
+                // Middle frame
+                TilePixelValue::Two
+            } else {
+                // Inner square
+                TilePixelValue::One
+            };
+            
+            tile.pixels[row][col] = pixel;
+        }
+    }
+    
+    tile
+}
+
+/// Renders a tile to the buffer starting at row and col (0-indexed)
+fn render_tile_to_buffer(tile: &Tile, buffer: &mut [u32], start_row: usize, start_col: usize) {
+    // Game Boy color palette: 0=white, 1=light gray, 2=dark gray, 3=black
+    let colors = [0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000];
+    
+    for row in 0..8 {
+        for col in 0..8 {
+            let pixel_value = tile.pixels[row][col];
+            let color = colors[pixel_value as usize];
+            
+            let screen_row = start_row + row;
+            let screen_col = start_col + col;
+            
+            // Write to buffer (each pixel is scaled by SCREEN_SCALE)
+            for scale_row in 0..SCREEN_SCALE {
+                for scale_col in 0..SCREEN_SCALE {
+                    let buffer_row = screen_row * SCREEN_SCALE + scale_row;
+                    let buffer_col = screen_col * SCREEN_SCALE + scale_col;
+                    let buffer_idx = buffer_row * (SCREEN_WIDTH * SCREEN_SCALE) + buffer_col;
+                    
+                    if buffer_idx < buffer.len() {
+                        buffer[buffer_idx] = color;
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Runs the CPU with a minifb window. Press SPACE to execute a CPU tick.

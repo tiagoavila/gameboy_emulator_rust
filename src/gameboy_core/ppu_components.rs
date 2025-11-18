@@ -1,6 +1,8 @@
+use core::fmt;
+
 use crate::gameboy_core::{constants::*, cpu_components};
 
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,fmt::Debug)]
 pub enum TilePixelValue {
     Zero,
     One,
@@ -8,7 +10,7 @@ pub enum TilePixelValue {
     Three,
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,fmt::Debug)]
 pub struct Tile {
     pub pixels: [[TilePixelValue; 8]; 8],
 }
@@ -37,7 +39,8 @@ pub struct LcdcRegister {
     /// Objects (sprites) aren’t affected by this, and will always use the $8000 addressing mode.
     pub bg_window_tiles: bool,
 
-    /// This bit works similarly to window_tile_map_area: if the bit is clear (0), the BG uses tilemap $9800, otherwise tilemap $9C00.
+    /// This bit works similarly to window_tile_map_area: if the bit is clear (0),
+    ///  the BG uses tilemap from $9800 to $9BFF, otherwise tilemap $9C00 to $9FFF.
     pub bg_tile_map_area: bool,
     
     /// This bit controls the size of all objects (1 tile or 2 stacked vertically). 
@@ -57,6 +60,7 @@ pub struct LcdcRegister {
 }
 
 impl LcdcRegister {
+    /// Reads the LCDC register from the memory bus and returns an instance of LcdcRegister with the corresponding flags set.
     pub fn get_lcdc_register(memory_bus: &cpu_components::MemoryBus) -> Self {
         let lcdc_value = memory_bus.get_lcdc_register();
         
@@ -74,7 +78,7 @@ impl LcdcRegister {
     /// Returns the memory address range the BG and Window use to pick up tiles.
     /// When bg_window_tiles is true, returns the address range from 0x8000 to 0x8FFF.
     /// When false, returns the address range from 0x8800 to 0x97FF.
-    pub fn get_bg_window_tiles_area(&self) -> (u16, u16) {
+    pub fn get_bg_window_tiles_area_address_range(&self) -> (u16, u16) {
         if self.bg_window_tiles {
             return (BG_WINDOW_DATA_AREA_0_START, BG_WINDOW_DATA_AREA_0_END);
         }
@@ -85,7 +89,7 @@ impl LcdcRegister {
     /// Returns the memory address range the Window Tile Map is located at. So it returns where the map for Window is.
     /// When window_tile_map_area is true, returns the address range from 0x9C00 to 0x9FFF.
     /// When false, returns the address range from 0x9800 to 0x9BFF.
-    pub fn get_window_tile_map_area(&self) -> (u16, u16) {
+    pub fn get_window_tile_map_area_address_range(&self) -> (u16, u16) {
         if self.window_tile_map_area {
             return (TILE_MAP_AREA_1_START, TILE_MAP_AREA_1_END);
         }
@@ -96,7 +100,7 @@ impl LcdcRegister {
     /// Returns the memory address range the BG Tile Map is located at. So it returns where the map for BG is.
     /// When bg_tile_map_area is true, returns the address range from 0x9C00 to 0x9FFF.
     /// When false, returns the address range from 0x9800 to 0x9BFF.
-    pub fn get_bg_tiles_map_area(&self) -> (u16, u16) {
+    pub fn get_bg_tiles_map_area_address_range(&self) -> (u16, u16) {
         if self.bg_tile_map_area {
             return (TILE_MAP_AREA_1_START, TILE_MAP_AREA_1_END);
         }

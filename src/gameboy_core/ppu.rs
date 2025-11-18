@@ -1,5 +1,5 @@
 use crate::gameboy_core::{
-    constants::{SCREEN_HEIGHT, SCREEN_WIDTH}, cpu_components, ppu, ppu_components::{self, Tile, TilePixelValue}
+    constants::{SCREEN_HEIGHT, SCREEN_WIDTH, TILE_MAP_AREA_0_START}, cpu_components, ppu, ppu_components::{self, Tile, TilePixelValue}
 };
 
 pub struct Ppu {
@@ -16,7 +16,16 @@ impl Ppu {
     pub fn render_screen(&self, memory_bus: &cpu_components::MemoryBus) {
         let tiles = self.read_tiles(memory_bus);
         let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(memory_bus);
-        self.read_tile_map(memory_bus, &lcdc_register);
+        let tile_map = self.get_tile_map_as_grid_32x32(memory_bus, &lcdc_register);
+        // print tile map to console
+        for row in 0..32 {
+            for col in 0..32 {
+                // print the tile from the tiles array with the value from tile_map
+                let tile_index = tile_map[row][col] as usize;
+                print!("{:?}", tiles[tile_index]);
+            }
+            println!();
+        }
     }
 
     fn read_tiles(&self, memory_bus: &cpu_components::MemoryBus) -> [Tile; 384] {
@@ -75,11 +84,16 @@ impl Ppu {
         tiles
     }
     
-    fn read_tile_map(&self, memory_bus: &cpu_components::MemoryBus, lcdc: &ppu_components::LcdcRegister) -> [u8; 1024] {
-        [0; 1024]
-    }
-    
-    pub fn get_lcdc_register(&self) {
-        
+    /// Converts the tile map from a flat vector to a 32x32 grid.
+    /// To accomplish this, it reads the tile map from memory and then parses to a 2D array by calculating row and column indices.
+    fn get_tile_map_as_grid_32x32(&self, memory_bus: &cpu_components::MemoryBus, lcdc: &ppu_components::LcdcRegister) -> [[u8; 32]; 32] {
+        let tile_map_vec = memory_bus.get_tile_map(lcdc).to_vec();
+        let mut tile_map_grid = [[0u8; 32]; 32];
+        for (i, &value) in tile_map_vec.iter().enumerate() {
+            let row = i / 32;
+            let col = i % 32;
+            tile_map_grid[row][col] = value;
+        }
+        tile_map_grid
     }
 }

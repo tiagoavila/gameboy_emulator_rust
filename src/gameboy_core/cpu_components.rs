@@ -1,4 +1,4 @@
-use crate::gameboy_core::constants::{INITIAL_PC, LCDC, MEMORY_SIZE};
+use crate::gameboy_core::{constants::{INITIAL_PC, LCDC, MEMORY_SIZE, TILE_MAP_AREA_0_END, TILE_MAP_AREA_0_START, TILE_MAP_AREA_1_END, TILE_MAP_AREA_1_START}, ppu_components::LcdcRegister};
 
 pub struct Registers {
     pub a: u8,
@@ -247,5 +247,11 @@ impl MemoryBus {
     /// Get LCDC register value
     pub fn get_lcdc_register(&self) -> u8 {
         self.read_byte(LCDC)
+    }
+    
+    /// Returns the tile map area from 9800-9BFF or 9C00-9FFF based on the bg_tile_map_area flag in the LCDC register.
+    pub fn get_tile_map(&self, lcdc_register: &LcdcRegister) -> &[u8] {
+        let (start, end) = lcdc_register.get_bg_tiles_map_area_address_range();
+        &self.memory[start as usize..=end as usize]
     }
 }
