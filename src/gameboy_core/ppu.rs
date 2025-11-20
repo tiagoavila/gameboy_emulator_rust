@@ -15,6 +15,8 @@ impl Ppu {
         }
     }
 
+    /// Generates the screen buffer representing the visible 160x144 pixel screen.
+    /// This will build the Background first, then apply the Window (if enabled), and finally render the Objects - Sprites (if enabled).
     pub fn get_screen_buffer(&self, memory_bus: &cpu_components::MemoryBus) -> [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT] {
         let tiles = self.read_tiles(memory_bus);
         let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(memory_bus);
