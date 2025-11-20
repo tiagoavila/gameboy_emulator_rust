@@ -249,9 +249,29 @@ impl MemoryBus {
         self.read_byte(LCDC)
     }
     
-    /// Returns the tile map area from 9800-9BFF or 9C00-9FFF based on the bg_tile_map_area flag in the LCDC register.
-    pub fn get_tile_map(&self, lcdc_register: &LcdcRegister) -> &[u8] {
+    /// Returns the background tile map area from 9800-9BFF or 9C00-9FFF based on the bg_tile_map_area flag in the LCDC register.
+    pub fn get_bg_tile_map(&self, lcdc_register: &LcdcRegister) -> &[u8] {
         let (start, end) = lcdc_register.get_bg_tiles_map_area_address_range();
         &self.memory[start as usize..=end as usize]
+    }
+    
+    /// Get SCY register value
+    pub fn get_scy_register(&self) -> u8 {
+        self.read_byte(crate::gameboy_core::constants::SCY)
+    }
+
+    /// Get SCX register value
+    pub fn get_scx_register(&self) -> u8 {
+        self.read_byte(crate::gameboy_core::constants::SCX)
+    }
+    
+    /// Set SCY register value
+    pub fn set_scy_register(&mut self, value: u8) {
+        self.write_byte(crate::gameboy_core::constants::SCY, value);
+    }
+
+    /// Set SCX register value
+    pub fn set_scx_register(&mut self, value: u8) {
+        self.write_byte(crate::gameboy_core::constants::SCX, value);
     }
 }

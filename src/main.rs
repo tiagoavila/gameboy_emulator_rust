@@ -111,7 +111,7 @@ fn run_cpu_with_keyboard(
         // Check if R is pressed to call render screen once per key press.
         let r_down = window.is_key_down(Key::R);
         if r_down && !r_pressed {
-            cpu.render_screen();
+            cpu.get_screen_buffer();
         }
         r_pressed = r_down;
 

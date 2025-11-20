@@ -1,4 +1,4 @@
-use crate::gameboy_core::{constants::{EIGHT_BIT_REGISTERS, SIXTEEN_BIT_REGISTERS, START_ADDRESS_FOR_LOAD_INSTRUCTIONS}, cpu_components::{FlagsRegister, MemoryBus, Registers}, cpu_utils, ppu::{self, Ppu}};
+use crate::gameboy_core::{constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS, START_ADDRESS_FOR_LOAD_INSTRUCTIONS}, cpu_components::{FlagsRegister, MemoryBus, Registers}, cpu_utils, ppu::{self, Ppu}};
 
 pub struct Cpu {
     pub registers: Registers,
@@ -1122,8 +1122,8 @@ impl Cpu {
         self.memory_bus.copy_from_binary(rom_binary);
     }
     
-    pub fn render_screen(&mut self) {
-        self.ppu.render_screen(&mut self.memory_bus);
+    pub fn get_screen_buffer(&mut self) -> [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT] {
+        self.ppu.get_screen_buffer(&mut self.memory_bus)
     }
 }
 

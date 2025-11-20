@@ -10,6 +10,11 @@ pub const SCREEN_WIDTH: usize = 160;
 /// Screen height in pixels.
 pub const SCREEN_HEIGHT: usize = 144;
 
+/// The size of the map used for background and window rendering in pixels (256x256).
+pub const BG_AND_WINDOW_MAP_SCREEN_SIZE: usize = 256;
+/// Number of tiles per row and column in the background and window tile map (32x32).
+pub const BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL: usize = 32;
+
 /// Start address for load instructions involving I/O ports.
 pub const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
 
@@ -58,3 +63,13 @@ pub const TILE_MAP_AREA_1_END: u16 = 0x9FFF;
 
 pub const LCDC: u16 = 0xFF40; // LCD Control register
 pub const BGP: u16 = 0xFF47; // Background palette
+
+/// SCY specifies the vertical scroll position of the background.
+/// The value ranges from 0 to 255, where 0 means no vertical scrolling,
+/// and 255 means the background is scrolled up by 255 pixels.
+pub const SCY: u16 = 0xFF42;
+
+/// SCX specifies the horizontal scroll position of the background.
+/// The value ranges from 0 to 255, where 0 means no horizontal scrolling,
+/// and 255 means the background is scrolled left by 255 pixels.
+pub const SCX: u16 = 0xFF43;
