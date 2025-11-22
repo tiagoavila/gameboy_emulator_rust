@@ -1,6 +1,6 @@
-use crate::gameboy_core::{constants::{INITIAL_PC, LCDC, MEMORY_SIZE, TILE_MAP_AREA_0_END, TILE_MAP_AREA_0_START, TILE_MAP_AREA_1_END, TILE_MAP_AREA_1_START}, ppu_components::LcdcRegister};
+use crate::gameboy_core::{constants::{BGP, INITIAL_PC, LCDC, MEMORY_SIZE, SCX, SCY, TILE_MAP_AREA_0_END, TILE_MAP_AREA_0_START, TILE_MAP_AREA_1_END, TILE_MAP_AREA_1_START}, ppu_components::LcdcRegister};
 
-pub struct Registers {
+pub struct CpuRegisters {
     pub a: u8,
     pub b: u8,
     pub c: u8,
@@ -30,17 +30,17 @@ pub struct MemoryBus {
     memory: [u8; MEMORY_SIZE],
 } 
 
-impl Registers {
+impl CpuRegisters {
     pub fn new() -> Self {
         Self {
-            a: 0,
+            a: 0x01,
             b: 0,
-            c: 0,
+            c: 0x13,
             d: 0,
-            e: 0,
-            h: 0,
-            l: 0,
-            sp: 0,
+            e: 0xD8,
+            h: 0x01,
+            l: 0x4D,
+            sp: 0xFFFE,
             pc: INITIAL_PC,
         }
     }
@@ -144,7 +144,7 @@ impl Registers {
 impl FlagsRegister {
     pub fn new() -> Self {
         Self {
-            z_flag: false,
+            z_flag: true,
             n_flag: false,
             h_flag: false,
             c_flag: false,
@@ -249,6 +249,11 @@ impl MemoryBus {
         self.read_byte(LCDC)
     }
     
+    /// Set LCDC register value
+    pub fn set_lcdc_register(&mut self, value: u8) {
+        self.write_byte(LCDC, value);
+    }
+    
     /// Returns the background tile map area from 9800-9BFF or 9C00-9FFF based on the bg_tile_map_area flag in the LCDC register.
     pub fn get_bg_tile_map(&self, lcdc_register: &LcdcRegister) -> &[u8] {
         let (start, end) = lcdc_register.get_bg_tiles_map_area_address_range();
@@ -257,21 +262,25 @@ impl MemoryBus {
     
     /// Get SCY register value
     pub fn get_scy_register(&self) -> u8 {
-        self.read_byte(crate::gameboy_core::constants::SCY)
+        self.read_byte(SCY)
     }
 
     /// Get SCX register value
     pub fn get_scx_register(&self) -> u8 {
-        self.read_byte(crate::gameboy_core::constants::SCX)
+        self.read_byte(SCX)
     }
     
     /// Set SCY register value
     pub fn set_scy_register(&mut self, value: u8) {
-        self.write_byte(crate::gameboy_core::constants::SCY, value);
+        self.write_byte(SCY, value);
     }
 
     /// Set SCX register value
     pub fn set_scx_register(&mut self, value: u8) {
-        self.write_byte(crate::gameboy_core::constants::SCX, value);
+        self.write_byte(SCX, value);
+    }
+    
+    pub(crate) fn set_bgp_register(&mut self, value: u8) {
+        self.write_byte(BGP, value);
     }
 }

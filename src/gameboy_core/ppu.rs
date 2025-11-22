@@ -14,6 +14,10 @@ impl Ppu {
             screen: [[0; SCREEN_WIDTH]; SCREEN_HEIGHT],
         }
     }
+    
+    pub fn update_screen(&mut self, memory_bus: &cpu_components::MemoryBus) {
+        self.screen = self.get_screen_buffer(memory_bus);
+    }
 
     /// Generates the screen buffer representing the visible 160x144 pixel screen.
     /// This will build the Background first, then apply the Window (if enabled), and finally render the Objects - Sprites (if enabled).
@@ -23,7 +27,7 @@ impl Ppu {
 
         //bg setup
         let bg_buffer = self.get_bg_buffer(memory_bus, &tiles, &lcdc_register);
-        let mut screen_buffer = self.get_visible_bg_buffer(&bg_buffer, memory_bus);
+        let screen_buffer = self.get_visible_bg_buffer(&bg_buffer, memory_bus);
 
         screen_buffer
     }
@@ -119,22 +123,22 @@ impl Ppu {
         }
 
         // print the first 8 tiles for verification
-        for i in 0..8 {
-            println!("Tile {}:", i);
-            for row in 0..8 {
-                for col in 0..8 {
-                    let pixel = match tiles[i].pixels[row][col] {
-                        TilePixelValue::Zero => '0',
-                        TilePixelValue::One => '1',
-                        TilePixelValue::Two => '2',
-                        TilePixelValue::Three => '3',
-                    };
-                    print!("{}", pixel);
-                }
-                println!();
-            }
-            println!();
-        }
+        // for i in 0..8 {
+        //     println!("Tile {}:", i);
+        //     for row in 0..8 {
+        //         for col in 0..8 {
+        //             let pixel = match tiles[i].pixels[row][col] {
+        //                 TilePixelValue::Zero => '0',
+        //                 TilePixelValue::One => '1',
+        //                 TilePixelValue::Two => '2',
+        //                 TilePixelValue::Three => '3',
+        //             };
+        //             print!("{}", pixel);
+        //         }
+        //         println!();
+        //     }
+        //     println!();
+        // }
 
         tiles
     }

@@ -1,7 +1,7 @@
-use crate::gameboy_core::{constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS, START_ADDRESS_FOR_LOAD_INSTRUCTIONS}, cpu_components::{FlagsRegister, MemoryBus, Registers}, cpu_utils, ppu::{self, Ppu}};
+use crate::gameboy_core::{constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS, START_ADDRESS_FOR_LOAD_INSTRUCTIONS}, cpu_components::{FlagsRegister, MemoryBus, CpuRegisters}, cpu_utils, ppu::{self, Ppu}};
 
 pub struct Cpu {
-    pub registers: Registers,
+    pub registers: CpuRegisters,
     pub flags_register: FlagsRegister,
     pub memory_bus: MemoryBus,
     pub is_debug_mode: bool,
@@ -11,14 +11,26 @@ pub struct Cpu {
 
 impl Cpu {
     pub fn new() -> Self {
-        Self {
-            registers: Registers::new(),
+        let mut cpu = Self {
+            registers: CpuRegisters::new(),
             flags_register: FlagsRegister::new(),
             memory_bus: MemoryBus::new(),
             is_debug_mode: false,
             ppu: Ppu::new(),
             cycles: 0,
-        }
+        };
+        cpu.initialize_memory_registers();
+
+        cpu
+    }
+    
+    /// Initialize the Registers stored in RAM to default values as per Gameboy hardware specs.
+    pub fn initialize_memory_registers(&mut self) {
+        // Initialize LCDC register to enable LCD and set background tile map area to 0x9800-0x9BFF
+        self.memory_bus.set_lcdc_register(0x91); // 10010001: LCD enabled, BG enabled, Tile data area at 0x8000, BG tile map area at 0x9800
+        self.memory_bus.set_bgp_register(0xFC); // Set BGP register to a default value
+        
+        // Other registers can be initialized here as needed
     }
 
     /// Start the emulator with the provided ROM binary data.
@@ -29,6 +41,7 @@ impl Cpu {
         return cpu;
     }
 
+    /// Perform a single CPU tick: fetch, decode, and execute one instruction.
     pub fn tick(&mut self) {
         let opcode = self.fetch_opcode();
 
@@ -485,7 +498,6 @@ impl Cpu {
 
     /// Subtracts the contents of register r and CY from the contents of register A and stores the results in register A. 
     fn sbc_a_r(&mut self, opcode: u8) {
-        println!("Executing SBC A, r");
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.sbc_a_value(value);
@@ -515,7 +527,6 @@ impl Cpu {
         let (mut result, _borrow) = self.registers.a.overflowing_sub(value);
         // Half-carry flag (H): Set if no borrow from bit 4
         // In subtraction, half-carry is set when the lower nibble of A is less than the lower nibble of B
-        println!("A: {:02X}, value: {:02X}", self.registers.a, value);
         let mut half_carry = (self.registers.a & 0x0F) < (value & 0x0F);
 
         // Carry flag (C): Set if no borrow occurred (A < B)
@@ -1124,6 +1135,10 @@ impl Cpu {
     
     pub fn get_screen_buffer(&mut self) -> [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT] {
         self.ppu.get_screen_buffer(&mut self.memory_bus)
+    }
+    
+    pub(crate) fn set_debug_mode(&mut self, value: bool) {
+        self.is_debug_mode = value;
     }
 }
 

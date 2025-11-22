@@ -61,8 +61,11 @@ pub const TILE_MAP_AREA_0_END: u16 = 0x9BFF;
 pub const TILE_MAP_AREA_1_START: u16 = 0x9C00;
 pub const TILE_MAP_AREA_1_END: u16 = 0x9FFF;
 
-pub const LCDC: u16 = 0xFF40; // LCD Control register
-pub const BGP: u16 = 0xFF47; // Background palette
+/// LCDC is the main LCD Control register. Its bits toggle what elements are displayed on the screen, and how.
+pub const LCDC: u16 = 0xFF40; 
+
+///This register assigns gray shades to the color indices of the BG and Window tiles. 
+pub const BGP: u16 = 0xFF47; 
 
 /// SCY specifies the vertical scroll position of the background.
 /// The value ranges from 0 to 255, where 0 means no vertical scrolling,
