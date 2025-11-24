@@ -210,6 +210,7 @@ impl Cpu {
 
             // Call and Returns Instructions
             0b11001001 => self.ret(),
+            v if (v & 0b11000111) == 0b11000100 => self.call_cc_imm16(opcode),
 
             // CB prefix instructions
             0xCB => self.execute_cb_prefix_instructions(),
@@ -408,7 +409,7 @@ impl Cpu {
         let (result, carry) = self.registers.a.overflowing_add(value);
         let h_flag = FlagsRegister::calculate_h_flag_on_add(self.registers.a, value);
         self.registers.a = result;
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
@@ -423,7 +424,7 @@ impl Cpu {
         let h_flag = FlagsRegister::calculate_h_flag_on_add(self.registers.a, value);
 
         self.registers.a = result;
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
@@ -439,7 +440,7 @@ impl Cpu {
         let h_flag = FlagsRegister::calculate_h_flag_on_add(self.registers.a, value);
 
         self.registers.a = result;
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
@@ -478,7 +479,7 @@ impl Cpu {
         h_flag |= FlagsRegister::calculate_h_flag_on_add(self.registers.a, temp_result);
 
         self.registers.a = final_result;
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_c_flag(temp_carry | final_carry);
         self.flags_register.set_z_flag(final_result);
         self.flags_register.set_h_flag(h_flag);
@@ -521,7 +522,7 @@ impl Cpu {
         let carry = self.registers.a < value;
 
         self.registers.a = result;
-        self.flags_register.n_flag = true;
+        self.flags_register.n = true;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(half_carry);
@@ -563,7 +564,7 @@ impl Cpu {
         // Carry flag (C): Set if no borrow occurred (A < B)
         let mut carry = self.registers.a < value;
 
-        if self.flags_register.c_flag {
+        if self.flags_register.c {
             half_carry |= (result & 0x0F) < 1;
             carry |= result < 1;
             let (result_c_flag, _) = result.overflowing_sub(1);
@@ -571,7 +572,7 @@ impl Cpu {
         }
 
         self.registers.a = result;
-        self.flags_register.n_flag = true;
+        self.flags_register.n = true;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(half_carry);
@@ -602,8 +603,8 @@ impl Cpu {
         self.registers.a &= value;
         self.flags_register.set_h_flag(true);
         self.flags_register.set_z_flag(self.registers.a);
-        self.flags_register.n_flag = false;
-        self.flags_register.c_flag = false;
+        self.flags_register.n = false;
+        self.flags_register.c = false;
     }
 
     /// Takes the logical-OR for each bit of the contents of register r and register A, and stores the results in register A.
@@ -631,8 +632,8 @@ impl Cpu {
         self.registers.a |= value;
         self.flags_register.set_h_flag(false);
         self.flags_register.set_z_flag(self.registers.a);
-        self.flags_register.n_flag = false;
-        self.flags_register.c_flag = false;
+        self.flags_register.n = false;
+        self.flags_register.c = false;
     }
 
     /// Takes the logical exclusive-OR for each bit of the contents of register r and register A, and stores the results in register A.
@@ -660,8 +661,8 @@ impl Cpu {
         self.registers.a ^= value;
         self.flags_register.set_h_flag(false);
         self.flags_register.set_z_flag(self.registers.a);
-        self.flags_register.n_flag = false;
-        self.flags_register.c_flag = false;
+        self.flags_register.n = false;
+        self.flags_register.c = false;
     }
 
     /// Compares the contents of register r and register A and sets the flag if they are equal.
@@ -698,7 +699,7 @@ impl Cpu {
         // Carry flag (C): Set if no borrow occurred (A < B)
         let carry = self.registers.a < value;
 
-        self.flags_register.n_flag = true;
+        self.flags_register.n = true;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(half_carry);
@@ -711,7 +712,7 @@ impl Cpu {
 
         let (result, _carry) = value.overflowing_add(1);
         let h_flag = FlagsRegister::calculate_h_flag_on_add(value, 1);
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
 
@@ -725,7 +726,7 @@ impl Cpu {
 
         let (result, _carry) = value.overflowing_add(1);
         let h_flag = FlagsRegister::calculate_h_flag_on_add(value, 1);
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
 
@@ -739,7 +740,7 @@ impl Cpu {
 
         let (result, _carry) = value.overflowing_sub(1);
         let h_flag = FlagsRegister::calculate_h_flag_on_sub(value, 1);
-        self.flags_register.n_flag = true;
+        self.flags_register.n = true;
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
 
@@ -753,7 +754,7 @@ impl Cpu {
 
         let (result, _carry) = value.overflowing_sub(1);
         let h_flag = FlagsRegister::calculate_h_flag_on_sub(value, 1);
-        self.flags_register.n_flag = true;
+        self.flags_register.n = true;
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
 
@@ -831,8 +832,8 @@ impl Cpu {
         let (result, carry) = self.registers.sp.overflowing_add(imm8);
         let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.sp, imm8);
         self.registers.set_hl(result);
-        self.flags_register.n_flag = false;
-        self.flags_register.z_flag = false;
+        self.flags_register.n = false;
+        self.flags_register.z = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_h_flag(h_flag);
     }
@@ -864,7 +865,7 @@ impl Cpu {
             FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.get_hl(), value);
 
         self.registers.set_hl(result);
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_h_flag(h_flag);
     }
@@ -876,8 +877,8 @@ impl Cpu {
         let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.sp, imm8);
 
         self.registers.sp = result;
-        self.flags_register.n_flag = false;
-        self.flags_register.z_flag = false;
+        self.flags_register.n = false;
+        self.flags_register.z = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_h_flag(h_flag);
         self.registers.increment_pc();
@@ -968,7 +969,7 @@ impl Cpu {
         value <<= 1;
         self.flags_register.set_c_flag(bit7 == 1);
         self.flags_register.set_z_flag(value);
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_h_flag(false);
 
         value
@@ -983,7 +984,7 @@ impl Cpu {
         value <<= 1;
         self.flags_register.set_c_flag(bit7 == 1);
         self.flags_register.set_z_flag_u16(value);
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_h_flag(false);
 
         value
@@ -998,7 +999,7 @@ impl Cpu {
         value >>= 1;
         self.flags_register.set_c_flag(bit0 == 1);
         self.flags_register.set_z_flag(value);
-        self.flags_register.n_flag = false;
+        self.flags_register.n = false;
         self.flags_register.set_h_flag(false);
 
         value
@@ -1009,7 +1010,7 @@ impl Cpu {
     /// of the register.
     /// The previous contents of the carry flag are copied to bit 0.
     fn rla(&mut self) {
-        let c_flag = self.flags_register.c_flag;
+        let c_flag = self.flags_register.c;
         let mut rotated_value = self.rotate_left_and_update_flags(self.registers.a);
 
         if c_flag {
@@ -1032,7 +1033,7 @@ impl Cpu {
     /// The same operation is repeated in sequence for the rest of the register.
     /// The previous contents of the carry flag are copied to bit 7.
     fn rra(&mut self) {
-        let c_flag = self.flags_register.c_flag;
+        let c_flag = self.flags_register.c;
         let mut rotated_value = self.rotate_right_and_update_flags(self.registers.a);
 
         if c_flag {
@@ -1101,6 +1102,38 @@ impl Cpu {
     /// This instruction disables interrupts but not immediately. Interrupts are disabled after instruction after DI is executed.
     fn di(&mut self) {
         self.di_instruction_pending = true;
+    }
+
+    /// If condition cc matches the flag, the PC value is pushed onto the stack and the PC is loaded with the 16-bit immediate value.
+    /// Conditions:
+    ///     00 - NZ (Z flag is reset)
+    ///     01 - Z  (Z flag is set)
+    ///     10 - NC (C flag is reset)
+    ///     11 - C  (C flag is set)
+    fn call_cc_imm16(&mut self, opcode: u8) {
+        if self.check_cc_condition(opcode) {
+            let high_byte = (self.registers.pc >> 8) as u8;
+            let low_byte = (self.registers.pc & 0x00FF) as u8;
+
+            self.registers.sp = self.registers.sp.wrapping_sub(1);
+            self.memory_bus.write_byte(self.registers.sp, high_byte);
+            self.registers.sp = self.registers.sp.wrapping_sub(1);
+            self.memory_bus.write_byte(self.registers.sp, low_byte);
+            
+            self.registers.pc = self.get_imm16();
+        }
+    }
+
+    /// Check the condition for conditional call/jump instructions based on the opcode.
+    /// Returns true if the condition is met, false otherwise.
+    fn check_cc_condition(&self, opcode: u8) -> bool {
+        match (opcode & 0b00111000) >> 3 {
+            0 => !self.flags_register.z,
+            1 => self.flags_register.z,
+            0b10 => !self.flags_register.c,
+            0b11 => self.flags_register.c,
+            _ => false,
+        }
     }
 
     /// Get the 8-bit immediate value
@@ -1188,14 +1221,9 @@ impl Cpu {
         }
     }
 
+    /// Set the IME (Interrupt Master Enable) flag
     fn set_ime(&mut self, value: bool) {
         self.ime = value;
         self.di_instruction_pending = false;
-    }
-}
-
-impl Default for Cpu {
-    fn default() -> Self {
-        Self::new()
     }
 }

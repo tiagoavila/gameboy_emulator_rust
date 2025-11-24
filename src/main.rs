@@ -134,6 +134,8 @@ fn render_display(cpu: &gameboy_core::cpu::Cpu, window: &mut Window, buffer: &mu
             }
         }
     }
+    
+    println!("Rendering frame to window.");
 
     window
         .update_with_buffer(

@@ -14,16 +14,16 @@ pub struct CpuRegisters {
 
 pub struct FlagsRegister {
     /// Zero Flag: True if the last operation resulted in zero
-    pub z_flag: bool, // Zero Flag
+    pub z: bool, // Zero Flag
 
     /// Subtract Flag: True if the last operation was a subtraction, false if it was an addition
-    pub n_flag: bool, // Subtract Flag
+    pub n: bool, // Subtract Flag
 
     /// Half Carry Flag: True if there was a carry from bit 3 to bit 4 in the last operation
-    pub h_flag: bool, // Half Carry Flag
+    pub h: bool, // Half Carry Flag
 
     /// Carry Flag: True if there was a carry from bit 7 to bit 8 in the last operation
-    pub c_flag: bool, // Carry Flag
+    pub c: bool, // Carry Flag
 }
 
 pub struct MemoryBus {
@@ -144,20 +144,20 @@ impl CpuRegisters {
 impl FlagsRegister {
     pub fn new() -> Self {
         Self {
-            z_flag: true,
-            n_flag: false,
-            h_flag: false,
-            c_flag: false,
+            z: true,
+            n: false,
+            h: false,
+            c: false,
         }
     }
 
     pub fn get_zero_flag(&self) -> bool {
-        self.z_flag
+        self.z
     }
 
     /// This bit is set if a carry occurred from the last math operation
     pub fn set_c_flag(&mut self, carry: bool) {
-        self.c_flag = carry
+        self.c = carry
     }
 
     /// This bit is set if a carry occurred from the lower nibble (a.k.a the lower four bits) in the last math operation.
@@ -187,17 +187,17 @@ impl FlagsRegister {
     
     /// This bit is set if and only if the result of an operation is zero
     pub fn set_z_flag(&mut self, result: u8) {
-        self.z_flag = result == 0;
+        self.z = result == 0;
     }
     
     /// The same as set_z_flag but for u16 values
     pub fn set_z_flag_u16(&mut self, result: u16) {
-        self.z_flag = result == 0;
+        self.z = result == 0;
     }
     
     /// Returns the c_flag as u8 to be used in ADC instructions
     pub fn get_c_flag_u8(&self) -> u8 {
-        if self.c_flag {
+        if self.c {
             1
         } else {
             0
@@ -205,7 +205,7 @@ impl FlagsRegister {
     }
     
     pub fn set_h_flag(&mut self, h_flag: bool) {
-        self.h_flag = h_flag;
+        self.h = h_flag;
     }
 }
 

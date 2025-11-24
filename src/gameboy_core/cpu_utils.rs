@@ -64,9 +64,9 @@ pub fn print_state(cpu: &Cpu) {
     println!("  PC: 0x{:04X} ({})", cpu.registers.pc, cpu.registers.pc);
 
     println!("\nFlags Register:");
-    println!("  Z (Zero):     {}", cpu.flags_register.z_flag);
-    println!("  N (Subtract): {}", cpu.flags_register.n_flag);
-    println!("  H (Half-carry): {}", cpu.flags_register.h_flag);
-    println!("  C (Carry):    {}", cpu.flags_register.c_flag);
+    println!("  Z (Zero):     {}", cpu.flags_register.z);
+    println!("  N (Subtract): {}", cpu.flags_register.n);
+    println!("  H (Half-carry): {}", cpu.flags_register.h);
+    println!("  C (Carry):    {}", cpu.flags_register.c);
     println!("================================================================\n");
 }
