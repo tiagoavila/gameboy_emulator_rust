@@ -853,4 +853,46 @@ mod tests {
         // Verify SP remains unchanged
         assert_eq!(cpu.registers.sp, 0xFFF8, "SP should remain unchanged after LD (nn), SP");
     }
+
+    #[test]
+    fn test_di_instruction() {
+        let mut cpu = Cpu::new();
+        
+        // Initially, IME should be false
+        assert_eq!(cpu.ime, false, "IME should be initially false");
+        assert_eq!(cpu.di_instruction_pending, false, "di_instruction_pending should be initially false");
+
+        // Execute DI instruction
+        let di_opcode = 0xF3; // DI opcode
+        cpu.execute(di_opcode);
+        
+        // After executing DI, IME should still be false (not immediately disabled)
+        // but di_instruction_pending should be set to true
+        assert_eq!(cpu.ime, false, "IME should still be false immediately after DI");
+        assert_eq!(cpu.di_instruction_pending, true, "di_instruction_pending should be true after DI");
+    }
+
+    #[test]
+    fn test_di_instruction_disables_ime_after_next_instruction() {
+        let mut cpu = Cpu::new();
+        
+        // Set IME to true so we can verify it gets disabled
+        cpu.ime = true;
+        assert_eq!(cpu.ime, true, "IME should be true initially");
+
+        // Execute DI instruction (0xF3)
+        let di_opcode = 0xF3;
+        cpu.execute(di_opcode);
+        
+        // After DI, IME should still be true (not immediately disabled)
+        assert_eq!(cpu.ime, true, "IME should still be true immediately after DI");
+        assert_eq!(cpu.di_instruction_pending, true, "di_instruction_pending should be true");
+
+        // Execute next instruction (NOP - 0x00)
+        cpu.tick(); // This will fetch, decode, execute NOP and then check di_instruction_pending
+        
+        // After the next instruction, IME should be disabled
+        assert_eq!(cpu.ime, false, "IME should be false after the instruction following DI");
+        assert_eq!(cpu.di_instruction_pending, false, "di_instruction_pending should be reset to false");
+    }
 }

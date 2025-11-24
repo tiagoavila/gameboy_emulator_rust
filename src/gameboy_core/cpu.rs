@@ -1,4 +1,12 @@
-use crate::gameboy_core::{constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS, START_ADDRESS_FOR_LOAD_INSTRUCTIONS}, cpu_components::{FlagsRegister, MemoryBus, CpuRegisters}, cpu_utils, ppu::{self, Ppu}};
+use crate::gameboy_core::{
+    constants::{
+        EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS,
+        START_ADDRESS_FOR_LOAD_INSTRUCTIONS,
+    },
+    cpu_components::{CpuRegisters, FlagsRegister, MemoryBus},
+    cpu_utils,
+    ppu::{self, Ppu},
+};
 
 pub struct Cpu {
     pub registers: CpuRegisters,
@@ -7,6 +15,8 @@ pub struct Cpu {
     pub is_debug_mode: bool,
     pub ppu: Ppu,
     pub cycles: u64,
+    pub ime: bool,
+    pub di_instruction_pending: bool,
 }
 
 impl Cpu {
@@ -18,18 +28,20 @@ impl Cpu {
             is_debug_mode: false,
             ppu: Ppu::new(),
             cycles: 0,
+            ime: false,
+            di_instruction_pending: false,
         };
         cpu.initialize_memory_registers();
 
         cpu
     }
-    
+
     /// Initialize the Registers stored in RAM to default values as per Gameboy hardware specs.
     pub fn initialize_memory_registers(&mut self) {
         // Initialize LCDC register to enable LCD and set background tile map area to 0x9800-0x9BFF
         self.memory_bus.set_lcdc_register(0x91); // 10010001: LCD enabled, BG enabled, Tile data area at 0x8000, BG tile map area at 0x9800
         self.memory_bus.set_bgp_register(0xFC); // Set BGP register to a default value
-        
+
         // Other registers can be initialized here as needed
     }
 
@@ -49,8 +61,10 @@ impl Cpu {
 
         self.registers.increment_pc();
         self.execute(opcode);
+
+        self.disable_ime_if_di_instruction_pending(opcode);
     }
-    
+
     fn fetch_opcode(&mut self) -> u8 {
         self.memory_bus.read_byte(self.registers.pc)
     }
@@ -136,9 +150,7 @@ impl Cpu {
             }
             0b11100110 => self.and_a_imm8(),
             0b10100110 => self.and_a_hl(),
-            v if (v >> 3) == 0b10110 && Cpu::source_is_8bit_register(opcode) => {
-                self.or_a_r(opcode)
-            }
+            v if (v >> 3) == 0b10110 && Cpu::source_is_8bit_register(opcode) => self.or_a_r(opcode),
             0b11110110 => self.or_a_imm8(),
             0b10110110 => self.or_a_hl(),
             v if (v >> 3) == 0b10101 && Cpu::source_is_8bit_register(opcode) => {
@@ -146,53 +158,72 @@ impl Cpu {
             }
             0b11101110 => self.xor_a_imm8(),
             0b10101110 => self.xor_a_hl(),
-            v if (v >> 3) == 0b10111 && Cpu::source_is_8bit_register(opcode) => {
-                self.cp_a_r(opcode)
-            }
+            v if (v >> 3) == 0b10111 && Cpu::source_is_8bit_register(opcode) => self.cp_a_r(opcode),
             0b11111110 => self.cp_a_imm8(),
             0b10111110 => self.cp_a_hl(),
             v if (v & 0b11000111) == 0b00000100 && Cpu::destination_is_8bit_register(opcode) => {
                 self.inc_r(opcode)
-            },
+            }
             0b00110100 => self.inc_hl(),
             v if (v & 0b11000111) == 0b00000101 && Cpu::destination_is_8bit_register(opcode) => {
                 self.dec_r(opcode)
-            },
+            }
             0b00110101 => self.dec_hl(),
+
+            // 16-Bit Transfer Instructions
             v if (v & 0b11001111) == 0b00000001 && Cpu::destination_is_16bit_register(opcode) => {
                 self.ld_r16_imm16(opcode)
-            },
+            }
             0b11111001 => self.ld_sp_hl(),
             v if (v & 0b11001111) == 0b11000101 && Cpu::destination_is_16bit_register(opcode) => {
                 self.push_r16_onto_memory_stack(opcode)
-            },
+            }
             v if (v & 0b11001111) == 0b11000001 && Cpu::destination_is_16bit_register(opcode) => {
                 self.pop_r16_from_memory_stack(opcode)
-            },
+            }
             0b11111000 => self.ld_hl_sp_imm8(),
             0b00001000 => self.ld_imm16_sp(),
+
+            // 16-Bit Arithmetic Operation Instructions
             v if (v & 0b11001111) == 0b00001001 && Cpu::destination_is_16bit_register(opcode) => {
                 self.add_hl_r16(opcode)
-            },
+            }
             0b11101000 => self.add_sp_imm8(),
             v if (v & 0b11001111) == 0b00000011 && Cpu::destination_is_16bit_register(opcode) => {
                 self.inc_r16(opcode)
-            },
+            }
             v if (v & 0b11001111) == 0b00001011 && Cpu::destination_is_16bit_register(opcode) => {
                 self.dec_r16(opcode)
-            },
-            0b11000011 => self.jp_imm16(),
-            0b11001001 => self.ret(),
+            }
+
+            // Rotate Shift Instructions
             0b00000111 => self.rlca(),
             0b00010111 => self.rla(),
             0b00001111 => self.rrca(),
             0b00011111 => self.rra(),
+
+            // Bit Operations
+
+            // Jump Instructions
             0b00011000 => self.jr_imm8(),
+            0b11000011 => self.jp_imm16(),
+
+            // Call and Returns Instructions
+            0b11001001 => self.ret(),
+
+            // CB prefix instructions
             0xCB => self.execute_cb_prefix_instructions(),
-            _ => { 
-                println!("*** Unimplemented opcode: 0x{:02X} - bin: 0b{:08b} ***", opcode, opcode);
+
+            // General-Purpose Arithmetic Operations and CPU Control Instructions
+            0xF3 => self.di(),
+
+            _ => {
+                println!(
+                    "*** Unimplemented opcode: 0x{:02X} - bin: 0b{:08b} ***",
+                    opcode, opcode
+                );
                 return;
-            },
+            }
         }
     }
 
@@ -452,21 +483,21 @@ impl Cpu {
         self.flags_register.set_z_flag(final_result);
         self.flags_register.set_h_flag(h_flag);
     }
-    
+
     /// Subtracts the contents of register r from the contents of register A and stores the results in register A.
     fn sub_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.sub_a_value(value);
     }
-    
+
     /// Subtracts the 8-bit immediate operand n from the contents of register A and stores the results in register A.
     fn sub_a_imm8(&mut self) {
         let value = self.get_imm8();
         self.sub_a_value(value);
         self.registers.increment_pc();
     }
-    
+
     /// Subtracts the contents of memory specified by the contents of register pair HL from the contents of register A and stores the results in register A.
     fn sub_a_hl(&mut self) {
         let value = self.get_memory_value_at_hl();
@@ -496,7 +527,7 @@ impl Cpu {
         self.flags_register.set_h_flag(half_carry);
     }
 
-    /// Subtracts the contents of register r and CY from the contents of register A and stores the results in register A. 
+    /// Subtracts the contents of register r and CY from the contents of register A and stores the results in register A.
     fn sbc_a_r(&mut self, opcode: u8) {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
@@ -515,8 +546,8 @@ impl Cpu {
         let value = self.get_memory_value_at_hl();
         self.sbc_a_value(value);
     }
-    
-    /// Subtracts the contents of operand s and CY from the contents of register A and stores the results in register A. 
+
+    /// Subtracts the contents of operand s and CY from the contents of register A and stores the results in register A.
     /// r, n, and (HL) are used for operand s.
     /// Flags
     ///     Z: Set if result is 0; otherwise reset.
@@ -531,11 +562,11 @@ impl Cpu {
 
         // Carry flag (C): Set if no borrow occurred (A < B)
         let mut carry = self.registers.a < value;
-        
+
         if self.flags_register.c_flag {
             half_carry |= (result & 0x0F) < 1;
             carry |= result < 1;
-            let (result_c_flag , _) = result.overflowing_sub(1);
+            let (result_c_flag, _) = result.overflowing_sub(1);
             result = result_c_flag;
         }
 
@@ -565,12 +596,12 @@ impl Cpu {
         let value = self.get_memory_value_at_hl();
         self.and_a_value(value);
     }
-    
+
     /// Takes the logical-AND for each bit of the contents of operand s and register A, and stores the results in register A.
     fn and_a_value(&mut self, value: u8) {
         self.registers.a &= value;
         self.flags_register.set_h_flag(true);
-        self.flags_register.set_z_flag(self.registers.a); 
+        self.flags_register.set_z_flag(self.registers.a);
         self.flags_register.n_flag = false;
         self.flags_register.c_flag = false;
     }
@@ -594,12 +625,12 @@ impl Cpu {
         let value = self.get_memory_value_at_hl();
         self.or_a_value(value);
     }
-    
+
     /// Takes the logical-OR for each bit of the contents of operand s and register A, and stores the results in register A.
     fn or_a_value(&mut self, value: u8) {
         self.registers.a |= value;
         self.flags_register.set_h_flag(false);
-        self.flags_register.set_z_flag(self.registers.a); 
+        self.flags_register.set_z_flag(self.registers.a);
         self.flags_register.n_flag = false;
         self.flags_register.c_flag = false;
     }
@@ -623,12 +654,12 @@ impl Cpu {
         let value = self.get_memory_value_at_hl();
         self.xor_a_value(value);
     }
-    
+
     /// Takes the logical exclusive-OR for each bit of the contents of operand s and register A, and stores the results in register A.
     fn xor_a_value(&mut self, value: u8) {
         self.registers.a ^= value;
         self.flags_register.set_h_flag(false);
-        self.flags_register.set_z_flag(self.registers.a); 
+        self.flags_register.set_z_flag(self.registers.a);
         self.flags_register.n_flag = false;
         self.flags_register.c_flag = false;
     }
@@ -639,14 +670,14 @@ impl Cpu {
         let value = self.registers.get_8bit_register_value(source);
         self.cp_a_value(value);
     }
-    
+
     /// Compares the contents of 8-bit immediate operand n and register A and sets the flag if they are equal.
     fn cp_a_imm8(&mut self) {
         let value = self.get_imm8();
         self.cp_a_value(value);
         self.registers.increment_pc();
     }
-    
+
     /// Compares the contents of memory specified by the contents of register pair HL and register A and sets the flag if they are equal.
     fn cp_a_hl(&mut self) {
         let value = self.get_memory_value_at_hl();
@@ -672,7 +703,7 @@ impl Cpu {
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(half_carry);
     }
-    
+
     /// Increments the contents of register r by 1.
     fn inc_r(&mut self, opcode: u8) {
         let destination_register = Cpu::get_destination_register(opcode);
@@ -684,7 +715,8 @@ impl Cpu {
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
 
-        self.registers.set_8bit_register_value(destination_register, result);
+        self.registers
+            .set_8bit_register_value(destination_register, result);
     }
 
     /// Increments by 1 the contents of memory specified by register pair HL.
@@ -711,7 +743,8 @@ impl Cpu {
         self.flags_register.set_z_flag(result);
         self.flags_register.set_h_flag(h_flag);
 
-        self.registers.set_8bit_register_value(destination_register, result);
+        self.registers
+            .set_8bit_register_value(destination_register, result);
     }
 
     /// Decrements by 1 the contents of memory specified by register pair HL.
@@ -726,7 +759,7 @@ impl Cpu {
 
         self.write_memory_value_at_hl(result);
     }
-    
+
     /// Loads 2 bytes of immediate data to 16-bit register, where it can be the registers BC, DE, HL or SP.
     /// BC = 0b00, DE = 0b01, HL = 0b10, SP = 0b11
     fn ld_r16_imm16(&mut self, opcode: u8) {
@@ -741,14 +774,14 @@ impl Cpu {
             _ => (),
         }
     }
-    
+
     /// Loads the contents of register pair HL in stack pointer SP.
     fn ld_sp_hl(&mut self) {
         self.registers.sp = self.registers.get_hl();
     }
-    
-    /// Pushes the contents of register pair qq (a 16-bit register) onto the memory stack. First 1 is subtracted from SP and the 
-    /// contents of the higher portion of qq are placed on the stack. The contents of the lower portion of qq are 
+
+    /// Pushes the contents of register pair qq (a 16-bit register) onto the memory stack. First 1 is subtracted from SP and the
+    /// contents of the higher portion of qq are placed on the stack. The contents of the lower portion of qq are
     /// then placed on the stack. The contents of SP are automatically decremented by 2.
     /// FF80h-FFFEh: Can be used as CPU work RAM and/or stack RAM.
     fn push_r16_onto_memory_stack(&mut self, opcode: u8) {
@@ -765,15 +798,13 @@ impl Cpu {
         let low_byte = (value & 0x00FF) as u8;
 
         self.registers.sp = self.registers.sp.wrapping_sub(1);
-        self.memory_bus
-            .write_byte(self.registers.sp, high_byte);
+        self.memory_bus.write_byte(self.registers.sp, high_byte);
         self.registers.sp = self.registers.sp.wrapping_sub(1);
-        self.memory_bus
-            .write_byte(self.registers.sp, low_byte);
+        self.memory_bus.write_byte(self.registers.sp, low_byte);
     }
-    
-    /// Pops contents from the memory stack and into register pair qq. 
-    /// First the contents of memory specified by the contents of SP are loaded in the lower portion of qq. 
+
+    /// Pops contents from the memory stack and into register pair qq.
+    /// First the contents of memory specified by the contents of SP are loaded in the lower portion of qq.
     /// Next, the contents of SP are incremented by 1 and the contents of the memory they specify are loaded in the upper portion of qq.
     /// The contents of SP are automatically incremented by 2.
     fn pop_r16_from_memory_stack(&mut self, opcode: u8) {
@@ -793,7 +824,7 @@ impl Cpu {
             _ => (),
         }
     }
-    
+
     /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in HL.
     fn ld_hl_sp_imm8(&mut self) {
         let imm8 = self.get_imm8() as u16;
@@ -804,19 +835,18 @@ impl Cpu {
         self.flags_register.z_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_h_flag(h_flag);
-
     }
-    
+
     /// Stores the lower byte of SP at address nn specified by the 16-bit immediate operand nn and the upper byte of SP at address nn + 1.
     fn ld_imm16_sp(&mut self) {
         let imm16 = self.get_imm16();
         let sp_lower_byte = (self.registers.sp & 0b011111111) as u8;
         self.memory_bus.write_byte(imm16, sp_lower_byte);
-        
+
         let sp_higher_byte = (self.registers.sp >> 8) as u8;
         self.memory_bus.write_byte(imm16 + 1, sp_higher_byte);
     }
-    
+
     /// Adds the contents of a 16-bit register to the contents of register pair HL and stores the results in HL.
     /// The 16-bit register can be BC, DE, HL or SP.
     fn add_hl_r16(&mut self, opcode: u8) {
@@ -828,16 +858,17 @@ impl Cpu {
             0b11 => self.registers.sp,
             _ => 0,
         };
-        
+
         let (result, carry) = self.registers.get_hl().overflowing_add(value);
-        let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.get_hl(), value);
+        let h_flag =
+            FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.get_hl(), value);
 
         self.registers.set_hl(result);
         self.flags_register.n_flag = false;
         self.flags_register.set_c_flag(carry);
         self.flags_register.set_h_flag(h_flag);
     }
-    
+
     /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in SP.
     fn add_sp_imm8(&mut self) {
         let imm8 = self.get_imm8() as u16;
@@ -851,7 +882,7 @@ impl Cpu {
         self.flags_register.set_h_flag(h_flag);
         self.registers.increment_pc();
     }
-    
+
     /// Increments the contents of a 16-bit register by 1. The 16-bit register can be BC, DE, HL or SP.
     fn inc_r16(&mut self, opcode: u8) {
         let source_register = Cpu::get_16bit_destination_register(opcode);
@@ -862,7 +893,7 @@ impl Cpu {
             0b11 => self.registers.sp,
             _ => 0,
         };
-        
+
         let (result, _carry) = value.overflowing_add(1);
 
         match source_register {
@@ -884,7 +915,7 @@ impl Cpu {
             0b11 => self.registers.sp,
             _ => 0,
         };
-        
+
         let (result, _carry) = value.overflowing_sub(1);
 
         match source_register {
@@ -894,7 +925,6 @@ impl Cpu {
             0b11 => self.registers.sp = result,
             _ => (),
         }
-        
     }
 
     /// Loads the 16-bit immediate value to the program counter (PC).
@@ -903,12 +933,12 @@ impl Cpu {
         self.registers.pc = imm16;
         self.registers.increment_pc_twice();
     }
-    
-    /// Pops from the memory stack the PC value pushed when the subroutine was called, returning control to the source program. 
-    /// In this case, the contents of the address specified by the SP are loaded in the lower-order byte of the PC, 
+
+    /// Pops from the memory stack the PC value pushed when the subroutine was called, returning control to the source program.
+    /// In this case, the contents of the address specified by the SP are loaded in the lower-order byte of the PC,
     /// and the content of the SP is incremented by 1. The contents of the address specified by the new SP
     /// value are then loaded in the higher-order byte of the PC, and the SP is again incremented by 1. (The
-    /// value of SP is 2 larger than before instruction execution.) 
+    /// value of SP is 2 larger than before instruction execution.)
     fn ret(&mut self) {
         let low_byte_pc = self.memory_bus.read_byte(self.registers.sp) as u16;
 
@@ -916,13 +946,13 @@ impl Cpu {
         let high_byte_pc = self.memory_bus.read_byte(self.registers.sp) as u16;
 
         self.registers.increment_sp();
-        
+
         self.registers.pc = (high_byte_pc << 8) | low_byte_pc;
     }
-    
-    /// Rotates the contents of register A to the left. 
+
+    /// Rotates the contents of register A to the left.
     /// That is, the contents of bit 0 are copied to bit 1 and the previous contents of bit 1 (the contents before the copy operation)
-    /// are copied to bit 2. The same operation is repeated in sequence for the rest of the register. 
+    /// are copied to bit 2. The same operation is repeated in sequence for the rest of the register.
     /// The contents of bit 7 are placed in CY.
     fn rlca(&mut self) {
         let rotated_value = self.rotate_left_and_update_flags(self.registers.a);
@@ -943,7 +973,7 @@ impl Cpu {
 
         value
     }
-    
+
     /// Rotates a 16-bit value to the left, updating the CPU flags accordingly.
     /// The contents of bit 7 are placed in CY.
     /// Z flag is set if the result is 0; and flags N and H are reset.
@@ -973,9 +1003,9 @@ impl Cpu {
 
         value
     }
-    
+
     /// Rotate the contents of register A to the left, through the carry (CY) flag. That is, the contents of bit 0 are copied to bit 1,
-    /// and the previous contents of bit 1 (before the copy operation) are copied to bit 2. The same operation is repeated in sequence for the rest 
+    /// and the previous contents of bit 1 (before the copy operation) are copied to bit 2. The same operation is repeated in sequence for the rest
     /// of the register.
     /// The previous contents of the carry flag are copied to bit 0.
     fn rla(&mut self) {
@@ -998,8 +1028,8 @@ impl Cpu {
     }
 
     /// Rotate the contents of register A to the right, through the carry (CY) flag.
-    /// That is, the contents of bit 7 are copied to bit 6, and the previous contents of bit 6 (before the copy) are copied to bit 5. 
-    /// The same operation is repeated in sequence for the rest of the register. 
+    /// That is, the contents of bit 7 are copied to bit 6, and the previous contents of bit 6 (before the copy) are copied to bit 5.
+    /// The same operation is repeated in sequence for the rest of the register.
     /// The previous contents of the carry flag are copied to bit 7.
     fn rra(&mut self) {
         let c_flag = self.flags_register.c_flag;
@@ -1008,21 +1038,24 @@ impl Cpu {
         if c_flag {
             rotated_value |= 0b10000000;
         }
-        
+
         self.registers.a = rotated_value;
     }
 
-    fn execute_cb_prefix_instructions(&mut self) { 
+    fn execute_cb_prefix_instructions(&mut self) {
         let cb_opcode = self.fetch_opcode();
         self.registers.increment_pc();
-        
+
         match cb_opcode {
             v if (v & 0b11111000) == 0b00000000 && Cpu::source_is_8bit_register(cb_opcode) => {
                 self.rlc_r8(cb_opcode)
-            },
+            }
             0b00000110 => self.rlc_hl(),
             _ => {
-                println!("*** Unimplemented CB prefix opcode: 0x{:02X} - bin: 0b{:08b} ***", cb_opcode, cb_opcode);
+                println!(
+                    "*** Unimplemented CB prefix opcode: 0x{:02X} - bin: 0b{:08b} ***",
+                    cb_opcode, cb_opcode
+                );
                 return;
             }
         }
@@ -1032,11 +1065,12 @@ impl Cpu {
     fn rlc_r8(&mut self, cb_opcode: u8) {
         let register = Cpu::get_source_register(cb_opcode);
         let value = self.registers.get_8bit_register_value(register);
-        
+
         let rotated_value = self.rotate_left_and_update_flags(value);
-        self.registers.set_8bit_register_value(register, rotated_value);
+        self.registers
+            .set_8bit_register_value(register, rotated_value);
     }
-    
+
     /// Rotates the contents of memory specified by register pair HL to the left.
     fn rlc_hl(&mut self) {
         let hl = self.registers.get_hl();
@@ -1048,13 +1082,13 @@ impl Cpu {
     /// Jumps to the address by adding the signed 8-bit immediate value to the PC.
     /// The jump range is -128 to +127 bytes from the current position.
     /// The below logic uses 2's complement to handle negative offsets. When a number is parsed to i8 or i16, Rust automatically
-    /// interprets it as a signed number in 2's complement form. 
-    /// Example: 0xF6 as u8 = 246 
+    /// interprets it as a signed number in 2's complement form.
+    /// Example: 0xF6 as u8 = 246
     ///          0xF6 as i8 = -10 (two's complement interpretation).
     fn jr_imm8(&mut self) {
         // Read the signed offset (PC is already at opcode + 1)
         let imm8 = self.get_imm8() as i8; // Parse to i8 to handle
-        self.registers.increment_pc();// Move past the offset byte
+        self.registers.increment_pc(); // Move past the offset byte
 
         // Add the signed offset to PC
         // We need to convert i8 to i16 first to handle negative numbers correctly
@@ -1062,6 +1096,11 @@ impl Cpu {
 
         // Cycles: 12 (3 machine cycles)
         self.cycles += 12;
+    }
+
+    /// This instruction disables interrupts but not immediately. Interrupts are disabled after instruction after DI is executed.
+    fn di(&mut self) {
+        self.di_instruction_pending = true;
     }
 
     /// Get the 8-bit immediate value
@@ -1128,17 +1167,30 @@ impl Cpu {
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, value);
     }
-    
+
     fn load_rom(&mut self, rom_binary: Vec<u8>) {
         self.memory_bus.copy_from_binary(rom_binary);
     }
-    
+
     pub fn get_screen_buffer(&mut self) -> [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT] {
         self.ppu.get_screen_buffer(&mut self.memory_bus)
     }
-    
+
     pub(crate) fn set_debug_mode(&mut self, value: bool) {
         self.is_debug_mode = value;
+    }
+
+    /// If DI instructions is pending it means we need to set ime to false
+    fn disable_ime_if_di_instruction_pending(&mut self, opcode: u8) {
+        // ensure the current opcode is to the DI instruction
+        if opcode != 0xF3 && self.di_instruction_pending {
+            self.set_ime(false);
+        }
+    }
+
+    fn set_ime(&mut self, value: bool) {
+        self.ime = value;
+        self.di_instruction_pending = false;
     }
 }
 
