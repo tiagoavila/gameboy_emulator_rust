@@ -89,7 +89,7 @@ impl Cpu {
     // Table of opcodes: https://gbdev.io/pandocs/CPU_Instruction_Set.html
     pub fn execute(&mut self, opcode: u8) {
         match opcode {
-            0x00 => Cpu::nop(),        // NOP
+            0x00 | 0xE3 | 0xED => Cpu::nop(),        // NOP
             0b01110110 => self.halt(), // HALT
 
             // 8-Bit Transfer and Input/Output Instructions
