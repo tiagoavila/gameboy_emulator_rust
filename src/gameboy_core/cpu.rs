@@ -211,12 +211,14 @@ impl Cpu {
             // Call and Returns Instructions
             0b11001001 => self.ret(),
             v if (v & 0b11000111) == 0b11000100 => self.call_cc_imm16(opcode),
+            v if (v & 0b11000111) == 0b11000111 => self.rst(opcode),
 
             // CB prefix instructions
             0xCB => self.execute_cb_prefix_instructions(),
 
             // General-Purpose Arithmetic Operations and CPU Control Instructions
             0xF3 => self.di(),
+            0x3F => self.ccf(),
 
             _ => {
                 println!(
@@ -795,13 +797,7 @@ impl Cpu {
             _ => 0,
         };
 
-        let high_byte = (value >> 8) as u8;
-        let low_byte = (value & 0x00FF) as u8;
-
-        self.registers.sp = self.registers.sp.wrapping_sub(1);
-        self.memory_bus.write_byte(self.registers.sp, high_byte);
-        self.registers.sp = self.registers.sp.wrapping_sub(1);
-        self.memory_bus.write_byte(self.registers.sp, low_byte);
+        self.push_value_to_sp(value);
     }
 
     /// Pops contents from the memory stack and into register pair qq.
@@ -1104,6 +1100,13 @@ impl Cpu {
         self.di_instruction_pending = true;
     }
 
+    /// Flips the carry flag CY. H and N flags are reset.
+    fn ccf(&mut self) {
+        self.flags_register.c = !self.flags_register.c;
+        self.flags_register.h = false;
+        self.flags_register.n = false;
+    }
+
     /// If condition cc matches the flag, the PC value is pushed onto the stack and the PC is loaded with the 16-bit immediate value.
     /// Conditions:
     ///     00 - NZ (Z flag is reset)
@@ -1112,16 +1115,22 @@ impl Cpu {
     ///     11 - C  (C flag is set)
     fn call_cc_imm16(&mut self, opcode: u8) {
         if self.check_cc_condition(opcode) {
-            let high_byte = (self.registers.pc >> 8) as u8;
-            let low_byte = (self.registers.pc & 0x00FF) as u8;
-
-            self.registers.sp = self.registers.sp.wrapping_sub(1);
-            self.memory_bus.write_byte(self.registers.sp, high_byte);
-            self.registers.sp = self.registers.sp.wrapping_sub(1);
-            self.memory_bus.write_byte(self.registers.sp, low_byte);
-            
+            self.push_value_to_sp(self.registers.pc);
             self.registers.pc = self.get_imm16();
         }
+    }
+
+    /// Pushes a 16-bit value onto the stack. First 1 is subtracted from SP and the higher byte of the value is placed on the stack.
+    /// Then, 1 is subtracted from SP again and the lower byte of the value is placed on the stack.
+    /// The contents of SP are automatically decremented by 2.
+    pub fn push_value_to_sp(&mut self, value: u16) {
+        let high_byte = (value >> 8) as u8;
+        let low_byte = (value & 0x00FF) as u8;
+
+        self.registers.sp = self.registers.sp.wrapping_sub(1);
+        self.memory_bus.write_byte(self.registers.sp, high_byte);
+        self.registers.sp = self.registers.sp.wrapping_sub(1);
+        self.memory_bus.write_byte(self.registers.sp, low_byte);
     }
 
     /// Check the condition for conditional call/jump instructions based on the opcode.
@@ -1133,6 +1142,27 @@ impl Cpu {
             0b10 => !self.flags_register.c,
             0b11 => self.flags_register.c,
             _ => false,
+        }
+    }
+
+    /// Pushes the current value of the PC to the memory stack and loads to the PC the page 0 memory addresses provided by operand t.
+    /// Then next instruction is fetched from the address specified by the new content of PC.
+    /// With the push, the content of the SP is decremented by 1, and the higher-order byte of the PC is loaded
+    /// in the memory address specified by the new SP value. The value of the SP is then again decremented
+    /// by 1, and the lower-order byte of the PC is loaded in the memory address specified by that value of the SP.
+    /// The RST instruction can be used to jump to 1 of 8 addresses.
+    fn rst(&mut self, opcode: u8) {
+        self.push_value_to_sp(self.registers.pc);
+        self.registers.pc = match (opcode & 0b00111000) >> 3 {
+            0 => 0x0,
+            1 => 0x0008,
+            2 => 0x0010,
+            3 => 0x0018,
+            4 => 0x0020,
+            5 => 0x0028,
+            6 => 0x0030,
+            7 => 0x0038,
+            _ => 0x0,
         }
     }
 

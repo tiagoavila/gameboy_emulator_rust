@@ -1,4 +1,10 @@
-use crate::gameboy_core::{constants::{BGP, INITIAL_PC, LCDC, MEMORY_SIZE, SCX, SCY, TILE_MAP_AREA_0_END, TILE_MAP_AREA_0_START, TILE_MAP_AREA_1_END, TILE_MAP_AREA_1_START}, ppu_components::LcdcRegister};
+use crate::gameboy_core::{
+    constants::{
+        BGP, INITIAL_PC, LCDC, MEMORY_SIZE, SCX, SCY, TILE_MAP_AREA_0_END, TILE_MAP_AREA_0_START,
+        TILE_MAP_AREA_1_END, TILE_MAP_AREA_1_START,
+    },
+    ppu_components::LcdcRegister,
+};
 
 pub struct CpuRegisters {
     pub a: u8,
@@ -28,7 +34,7 @@ pub struct FlagsRegister {
 
 pub struct MemoryBus {
     memory: [u8; MEMORY_SIZE],
-} 
+}
 
 impl CpuRegisters {
     pub fn new() -> Self {
@@ -90,7 +96,7 @@ impl CpuRegisters {
             _ => 0,
         }
     }
-    
+
     pub fn get_af(&self) -> u16 {
         ((self.a as u16) << 8) | 0 // Flags register is not implemented here
     }
@@ -178,32 +184,28 @@ impl FlagsRegister {
 
         value1_bit_11 + value2_bit_11 > 0x0FFF
     }
-    
+
     /// Half-carry flag (H): Set if no borrow from bit 4.
     /// In subtraction, half-carry is set when the lower nibble of value1 is less than the lower nibble of value2
     pub fn calculate_h_flag_on_sub(value1: u8, value2: u8) -> bool {
         (value1 & 0x0F) < (value2 & 0x0F)
     }
-    
+
     /// This bit is set if and only if the result of an operation is zero
     pub fn set_z_flag(&mut self, result: u8) {
         self.z = result == 0;
     }
-    
+
     /// The same as set_z_flag but for u16 values
     pub fn set_z_flag_u16(&mut self, result: u16) {
         self.z = result == 0;
     }
-    
+
     /// Returns the c_flag as u8 to be used in ADC instructions
     pub fn get_c_flag_u8(&self) -> u8 {
-        if self.c {
-            1
-        } else {
-            0
-        }
+        if self.c { 1 } else { 0 }
     }
-    
+
     pub fn set_h_flag(&mut self, h_flag: bool) {
         self.h = h_flag;
     }
@@ -223,17 +225,18 @@ impl MemoryBus {
     pub fn write_byte(&mut self, address: u16, value: u8) {
         self.memory[address as usize] = value;
     }
-    
+
     pub fn copy_from_binary(&mut self, rom_binary: Vec<u8>) {
         let start_ram_address = 0 as usize;
-        self.memory[start_ram_address..(start_ram_address + rom_binary.len())].copy_from_slice(&rom_binary);
+        self.memory[start_ram_address..(start_ram_address + rom_binary.len())]
+            .copy_from_slice(&rom_binary);
     }
 
     /// Gets a reference to the VRAM (Video RAM) region
     pub fn get_vram(&self) -> &[u8] {
         &self.memory[0x8000..=0x9FFF]
     }
-    
+
     /// Gets a reference to the VRAM tile data region which covers addressess $8000-$97FF
     pub fn get_vram_tile_data(&self) -> &[u8] {
         &self.memory[0x8000..=0x97FF]
@@ -243,23 +246,23 @@ impl MemoryBus {
     pub fn get_vram_mut(&mut self) -> &mut [u8] {
         &mut self.memory[0x8000..=0x9FFF]
     }
-    
+
     /// Get LCDC register value
     pub fn get_lcdc_register(&self) -> u8 {
         self.read_byte(LCDC)
     }
-    
+
     /// Set LCDC register value
     pub fn set_lcdc_register(&mut self, value: u8) {
         self.write_byte(LCDC, value);
     }
-    
+
     /// Returns the background tile map area from 9800-9BFF or 9C00-9FFF based on the bg_tile_map_area flag in the LCDC register.
     pub fn get_bg_tile_map(&self, lcdc_register: &LcdcRegister) -> &[u8] {
         let (start, end) = lcdc_register.get_bg_tiles_map_area_address_range();
         &self.memory[start as usize..=end as usize]
     }
-    
+
     /// Get SCY register value
     pub fn get_scy_register(&self) -> u8 {
         self.read_byte(SCY)
@@ -269,7 +272,7 @@ impl MemoryBus {
     pub fn get_scx_register(&self) -> u8 {
         self.read_byte(SCX)
     }
-    
+
     /// Set SCY register value
     pub fn set_scy_register(&mut self, value: u8) {
         self.write_byte(SCY, value);
@@ -279,7 +282,7 @@ impl MemoryBus {
     pub fn set_scx_register(&mut self, value: u8) {
         self.write_byte(SCX, value);
     }
-    
+
     pub(crate) fn set_bgp_register(&mut self, value: u8) {
         self.write_byte(BGP, value);
     }

@@ -1,16 +1,15 @@
 *** Unimplemented opcode: 0xF3 - bin: 0b11110011 *** IMPLEMENTED
 *** Unimplemented opcode: 0xCC - bin: 0b11001100 *** IMPLEMENTED
-*** Unimplemented opcode: 0xC2 - bin: 0b11000010 ***
-*** Unimplemented opcode: 0xE7 - bin: 0b11100111 ***
-*** Unimplemented opcode: 0x3F - bin: 0b00111111 ***
-*** Unimplemented opcode: 0xEF - bin: 0b11101111 ***
+*** Unimplemented opcode: 0xC2 - bin: 0b11000010 *** IMPLEMENTED
+*** Unimplemented opcode: 0xE7 - bin: 0b11100111 *** IMPLEMENTED
+*** Unimplemented opcode: 0x3F - bin: 0b00111111 *** IMPLEMENTED
+*** Unimplemented opcode: 0xEF - bin: 0b11101111 *** IMPLEMENTED
 *** Unimplemented opcode: 0xCA - bin: 0b11001010 ***
 *** Unimplemented opcode: 0xC4 - bin: 0b11000100 ***
 *** Unimplemented opcode: 0xC0 - bin: 0b11000000 ***
 *** Unimplemented opcode: 0xD8 - bin: 0b11011000 ***
 *** Unimplemented opcode: 0xE9 - bin: 0b11101001 ***
 *** Unimplemented opcode: 0x27 - bin: 0b00100111 ***
-*** Unimplemented opcode: 0xC2 - bin: 0b11000010 ***
 *** Unimplemented opcode: 0xFD - bin: 0b11111101 ***
 *** Unimplemented opcode: 0x27 - bin: 0b00100111 ***
 *** Unimplemented opcode: 0xEC - bin: 0b11101100 ***
@@ -25,9 +24,7 @@
 *** Unimplemented opcode: 0xED - bin: 0b11101101 ***
 *** Unimplemented opcode: 0xC8 - bin: 0b11001000 ***
 *** Unimplemented opcode: 0xED - bin: 0b11101101 ***
-*** Unimplemented opcode: 0xEF - bin: 0b11101111 ***
 *** Unimplemented opcode: 0x20 - bin: 0b00100000 ***
-*** Unimplemented opcode: 0xEF - bin: 0b11101111 ***
 *** Unimplemented opcode: 0xCA - bin: 0b11001010 ***
 *** Unimplemented opcode: 0xC0 - bin: 0b11000000 ***
 *** Unimplemented opcode: 0xD8 - bin: 0b11011000 ***
@@ -84,28 +81,28 @@
 *** Unimplemented CB prefix opcode: 0xC3 - bin: 0b11000011 ***
 *** Unimplemented CB prefix opcode: 0xC4 - bin: 0b11000100 ***
 *** Unimplemented CB prefix opcode: 0xC5 - bin: 0b11000101 ***
-*** Unimplemented CB prefix opcode: 0xC7 - bin: 0b11000111 ***
+*** Unimplemented CB prefix opcode: 0xC7 - bin: 0b11000111 *** 
 *** Unimplemented CB prefix opcode: 0xC8 - bin: 0b11001000 ***
 *** Unimplemented CB prefix opcode: 0xC9 - bin: 0b11001001 ***
 *** Unimplemented CB prefix opcode: 0xCA - bin: 0b11001010 ***
 *** Unimplemented CB prefix opcode: 0xCB - bin: 0b11001011 ***
 *** Unimplemented CB prefix opcode: 0xCC - bin: 0b11001100 ***
 *** Unimplemented CB prefix opcode: 0xCD - bin: 0b11001101 ***
-*** Unimplemented CB prefix opcode: 0xCF - bin: 0b11001111 ***
+*** Unimplemented CB prefix opcode: 0xCF - bin: 0b11001111 *** 
 *** Unimplemented CB prefix opcode: 0xD0 - bin: 0b11010000 ***
 *** Unimplemented CB prefix opcode: 0xD1 - bin: 0b11010001 ***
 *** Unimplemented CB prefix opcode: 0xD2 - bin: 0b11010010 ***
 *** Unimplemented CB prefix opcode: 0xD3 - bin: 0b11010011 ***
 *** Unimplemented CB prefix opcode: 0xD4 - bin: 0b11010100 ***
 *** Unimplemented CB prefix opcode: 0xD5 - bin: 0b11010101 ***
-*** Unimplemented CB prefix opcode: 0xD7 - bin: 0b11010111 ***
+*** Unimplemented CB prefix opcode: 0xD7 - bin: 0b11010111 *** 
 *** Unimplemented CB prefix opcode: 0xD8 - bin: 0b11011000 ***
 *** Unimplemented CB prefix opcode: 0xD9 - bin: 0b11011001 ***
 *** Unimplemented CB prefix opcode: 0xDA - bin: 0b11011010 ***
 *** Unimplemented CB prefix opcode: 0xDB - bin: 0b11011011 ***
 *** Unimplemented CB prefix opcode: 0xDC - bin: 0b11011100 ***
 *** Unimplemented CB prefix opcode: 0xDD - bin: 0b11011101 ***
-*** Unimplemented CB prefix opcode: 0xDF - bin: 0b11011111 ***
+*** Unimplemented CB prefix opcode: 0xDF - bin: 0b11011111 *** 
 *** Unimplemented CB prefix opcode: 0xE0 - bin: 0b11100000 ***
 *** Unimplemented CB prefix opcode: 0xE1 - bin: 0b11100001 ***
 *** Unimplemented CB prefix opcode: 0xE2 - bin: 0b11100010 ***
@@ -138,9 +135,8 @@
 *** Unimplemented opcode: 0xCD - bin: 0b11001101 ***
 *** Unimplemented opcode: 0xCD - bin: 0b11001101 ***
 *** Unimplemented opcode: 0xC2 - bin: 0b11000010 ***
-*** Unimplemented opcode: 0xE7 - bin: 0b11100111 ***
+*** Unimplemented opcode: 0xE7 - bin: 0b11100111 *** IMPLEMENTED
 *** Unimplemented opcode: 0x3F - bin: 0b00111111 ***
-*** Unimplemented opcode: 0xEF - bin: 0b11101111 ***
 *** Unimplemented opcode: 0xCA - bin: 0b11001010 ***
 *** Unimplemented opcode: 0x28 - bin: 0b00101000 ***
 *** Unimplemented opcode: 0xCD - bin: 0b11001101 ***
@@ -150,6 +146,6 @@
 *** Unimplemented opcode: 0xC0 - bin: 0b11000000 ***
 *** Unimplemented opcode: 0xCD - bin: 0b11001101 ***
 *** Unimplemented opcode: 0xC0 - bin: 0b11000000 ***
-*** Unimplemented opcode: 0xDF - bin: 0b11011111 ***
+*** Unimplemented opcode: 0xDF - bin: 0b11011111 *** IMPLEMENTED
 *** Unimplemented opcode: 0xCD - bin: 0b11001101 ***
 

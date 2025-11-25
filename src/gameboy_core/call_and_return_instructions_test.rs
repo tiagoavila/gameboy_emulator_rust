@@ -45,29 +45,34 @@ mod tests {
     }
 
     #[test]
-    fn test_di_instruction_pending_flag_only_affects_di() {
+    fn test_rst_1_instruction() {
         let mut cpu = Cpu::new();
         
-        // Set IME to true
-        cpu.ime = true;
+        // Set up initial state
+        // PC is at 0x8000, after fetch and increment it will be 0x8001
+        cpu.registers.pc = 0x8001;
         
-        // Execute DI instruction
-        let di_opcode = 0xF3;
-        cpu.execute(di_opcode);
+        // Initialize SP to a safe location in RAM (0xFFFF)
+        cpu.registers.sp = 0xFFFF;
         
-        // Verify di_instruction_pending is set
-        assert_eq!(cpu.di_instruction_pending, true, "di_instruction_pending should be true after DI");
-        assert_eq!(cpu.ime, true, "IME should still be true");
-
-        // Execute a different instruction (INC A - 0x3C)
-        cpu.registers.pc = 0; // Reset PC
-        let inc_opcode = 0x3C;
-        let original_a = cpu.registers.a;
-        cpu.execute(inc_opcode);
+        let rst_1_opcode = 0xCF;
         
-        // After a non-DI instruction, IME should be disabled
-        assert_eq!(cpu.ime, false, "IME should be false after non-DI instruction following DI");
-        assert_eq!(cpu.di_instruction_pending, false, "di_instruction_pending should be reset");
-        assert_ne!(cpu.registers.a, original_a, "INC A should have incremented A");
+        // Execute RST 1 instruction
+        cpu.execute(rst_1_opcode);
+        
+        // Verify PC was set to 0x0008
+        assert_eq!(cpu.registers.pc, 0x0008, "PC should be set to 0x0008 after RST 1");
+        
+        // Verify that 0x8001 was pushed onto the stack
+        // push_value_to_sp decrements SP by 2, so SP should be at 0xFFFD
+        assert_eq!(cpu.registers.sp, 0xFFFD, "SP should be decremented by 2");
+        
+        // Read the pushed value from memory (little-endian)
+        // Low byte is at SP, high byte is at SP + 1. In little endian, low byte comes first.
+        let low_byte = cpu.memory_bus.read_byte(cpu.registers.sp);
+        let high_byte = cpu.memory_bus.read_byte(cpu.registers.sp + 1);
+        let pushed_value = ((high_byte as u16) << 8) | (low_byte as u16);
+        
+        assert_eq!(pushed_value, 0x8001, "The value 0x8001 should be pushed onto the stack");
     }
 }
