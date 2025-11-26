@@ -5,7 +5,7 @@ use crate::gameboy_core::{
     },
     cpu_components::{CpuRegisters, FlagsRegister, MemoryBus},
     cpu_utils,
-    ppu::{self, Ppu},
+    ppu::{Ppu},
 };
 
 pub struct Cpu {
@@ -1132,10 +1132,23 @@ impl Cpu {
         self.registers.sp = self.registers.sp.wrapping_sub(1);
         self.memory_bus.write_byte(self.registers.sp, low_byte);
     }
+    
+    /// Pops a 16-bit value from the stack. First the contents of memory specified by SP are loaded into the lower byte of the value,
+    /// and SP is incremented by 1. Then, the contents of memory specified by the new SP value are loaded into the higher byte of the value,
+    /// and SP is incremented by 1 again. 
+    /// The contents of SP are automatically incremented by 2.
+    pub fn pop_value_from_sp(&mut self) -> u16 {
+        let low_byte = self.memory_bus.read_byte(self.registers.sp);
+        self.registers.sp = self.registers.sp.wrapping_add(1);
+        let high_byte = self.memory_bus.read_byte(self.registers.sp);
+        self.registers.sp = self.registers.sp.wrapping_add(1);
+
+        ((high_byte as u16) << 8) | (low_byte as u16)
+    }
 
     /// Check the condition for conditional call/jump instructions based on the opcode.
     /// Returns true if the condition is met, false otherwise.
-    fn check_cc_condition(&self, opcode: u8) -> bool {
+    pub(crate) fn check_cc_condition(&self, opcode: u8) -> bool {
         match (opcode & 0b00111000) >> 3 {
             0 => !self.flags_register.z,
             1 => self.flags_register.z,
@@ -1167,13 +1180,13 @@ impl Cpu {
     }
 
     /// Get the 8-bit immediate value
-    fn get_imm8(&self) -> u8 {
+    pub(crate) fn get_imm8(&self) -> u8 {
         let imm8 = self.memory_bus.read_byte(self.registers.pc);
         imm8
     }
 
     /// Get the following two bytes, in little-endian order. Little-endian means the least significant byte comes first in memory.
-    fn get_imm16(&self) -> u16 {
+    pub(crate) fn get_imm16(&self) -> u16 {
         let lowest_significant_byte = self.memory_bus.read_byte(self.registers.pc) as u16;
         let most_significant_byte = self.memory_bus.read_byte(self.registers.pc + 1) as u16;
         (most_significant_byte << 8) | lowest_significant_byte
@@ -1185,19 +1198,19 @@ impl Cpu {
 
     /// Get the destination register from the opcode.
     /// The destination register is specified by bits 3 to 5 of the opcode.
-    fn get_destination_register(opcode: u8) -> u8 {
+    pub(crate) fn get_destination_register(opcode: u8) -> u8 {
         (opcode & 0b00111000) >> 3
     }
 
     /// Get the source register from the opcode.
     /// The source register is specified by bits 0 to 2 of the opcode.
-    fn get_source_register(opcode: u8) -> u8 {
+    pub(crate) fn get_source_register(opcode: u8) -> u8 {
         opcode & 0b00000111
     }
 
     /// Get the 16-bit destination register from the opcode.
     /// The destination register is specified by bits 4 and 5 of the opcode.
-    fn get_16bit_destination_register(opcode: u8) -> u8 {
+    pub(crate) fn get_16bit_destination_register(opcode: u8) -> u8 {
         (opcode & 0b00110000) >> 4
     }
 
@@ -1220,13 +1233,13 @@ impl Cpu {
     }
 
     /// Reads the content of memory specified by the contents of register pair HL
-    fn get_memory_value_at_hl(&mut self) -> u8 {
+    pub(crate) fn get_memory_value_at_hl(&mut self) -> u8 {
         let hl = self.registers.get_hl();
         self.memory_bus.read_byte(hl)
     }
 
     /// Writes a value in the content of memory specified by the contents of register pair HL
-    fn write_memory_value_at_hl(&mut self, value: u8) {
+    pub(crate) fn write_memory_value_at_hl(&mut self, value: u8) {
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, value);
     }
