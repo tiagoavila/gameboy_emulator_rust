@@ -1,7 +1,6 @@
 use crate::gameboy_core::{
     constants::{
-        BGP, INITIAL_PC, LCDC, MEMORY_SIZE, SCX, SCY, TILE_MAP_AREA_0_END, TILE_MAP_AREA_0_START,
-        TILE_MAP_AREA_1_END, TILE_MAP_AREA_1_START,
+        BGP, INITIAL_PC, LCDC, MEMORY_SIZE, SCX, SCY,
     },
     ppu_components::LcdcRegister,
 };

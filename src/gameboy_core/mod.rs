@@ -15,3 +15,4 @@ pub mod ppu;
 pub mod ppu_test;
 pub mod ppu_components;
 pub mod call_and_return_instructions_test;
+pub mod cpu_miscellaneous_instructions;
