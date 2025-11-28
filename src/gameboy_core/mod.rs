@@ -1,13 +1,10 @@
 pub mod cpu;
 pub mod cpu_components;
 pub mod constants;
-pub mod cpu_arithmetic_logical_operations_test;
-pub mod cpu_transfer_input_output_test;
 pub mod cpu_utils;
 pub mod ppu;
-pub mod ppu_test;
 pub mod ppu_components;
-pub mod call_and_return_instructions_test;
-pub mod cpu_rotate_shift_instructions_test;
-pub mod cpu_bit_operations_instructions_test;
 pub mod cpu_instructions;
+
+#[cfg(test)]
+mod tests;

@@ -166,7 +166,7 @@ pub fn setup_nintendo_display(cpu: &mut Cpu) {
 
 #[cfg(test)]
 mod tests {
-    use crate::gameboy_core::{constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BGP, LCDC, SCREEN_HEIGHT, SCREEN_WIDTH, TILE_MAP_AREA_0_START}, ppu_components, ppu_test::setup_nintendo_display};
+    use crate::gameboy_core::{constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BGP, LCDC, SCREEN_HEIGHT, SCREEN_WIDTH, TILE_MAP_AREA_0_START}, ppu_components};
     use minifb::{Key, Window, WindowOptions};
 
     #[test]
@@ -175,7 +175,7 @@ mod tests {
             crate::cpu_utils::read_rom("files/roms/tests/nintendo_logo.gb").unwrap(),
             true,
         );
-        setup_nintendo_display(&mut cpu);
+        super::setup_nintendo_display(&mut cpu);
 
         // Verify LCD is enabled
         assert_eq!(cpu.memory_bus.read_byte(LCDC) & 0x80, 0x80);
@@ -208,7 +208,7 @@ mod tests {
             true,
         );
         cpu.memory_bus.set_scx_register(40);
-        setup_nintendo_display(&mut cpu);
+        super::setup_nintendo_display(&mut cpu);
 
         // Verify LCD is enabled
         assert_eq!(cpu.memory_bus.read_byte(LCDC) & 0x80, 0x80);
