@@ -233,10 +233,14 @@ impl Cpu {
                 self.rlc_r8(cb_opcode)
             }
             0b00000110 => self.rlc_hl(),
+            v if (v & 0b11111000) == 0b00010000 && Cpu::source_is_8bit_register(cb_opcode) => {
+                self.rl_r8(cb_opcode)
+            }
+            0b00010110 => self.rl_hl(),
             v if (v & 0b11111000) == 0b00001000 && Cpu::source_is_8bit_register(cb_opcode) => {
                 self.rrc_r8(cb_opcode)
             }
-            0b00001110 => self.rlc_hl(),
+            0b00001110 => self.rrc_hl(),
             _ => {
                 println!(
                     "*** Unimplemented CB prefix opcode: 0x{:02X} - bin: 0b{:08b} ***",

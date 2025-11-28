@@ -1,5 +1,7 @@
 /// Trait for rotate and shift instruction operations
 pub trait CpuRotateShiftInstructions {
+    fn rl_hl(&mut self);
+    fn rl_r8(&mut self, cb_opcode: u8);
     fn rrc_r8(&mut self, cb_opcode: u8);
     fn rrc_hl(&mut self);
     fn rlca(&mut self);
@@ -70,6 +72,29 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let value = self.memory_bus.read_byte(hl);
 
         let rotated_value = self.rotate_left_and_update_flags(value, false);
+        self.memory_bus.write_byte(hl, rotated_value);
+    }
+
+    /// Rotate the contents of 8-bit register to the left. That is, the contents of bit 0 are copied to bit 1,
+    /// and the previous contents of bit 1 (before the copy operation) are copied to bit 2.
+    /// The same operation is repeated in sequence for the rest of the register.
+    /// The previous contents of the carry (CY) flag are copied to bit 0 of register
+    fn rl_r8(&mut self, cb_opcode: u8) {
+        let register = Self::get_source_register(cb_opcode);
+        let value = self.registers.get_8bit_register_value(register);
+
+        let rotated_value = self.rotate_left_and_update_flags(value, true);
+        self.registers
+            .set_8bit_register_value(register, rotated_value);
+    }
+
+    /// Rotates the contents of memory specified by register pair HL to the left.
+    /// The previous contents of the carry (CY) flag are copied to bit 0 of register B
+    fn rl_hl(&mut self) {
+        let hl = self.registers.get_hl();
+        let value = self.memory_bus.read_byte(hl);
+
+        let rotated_value = self.rotate_left_and_update_flags(value, true);
         self.memory_bus.write_byte(hl, rotated_value);
     }
 
