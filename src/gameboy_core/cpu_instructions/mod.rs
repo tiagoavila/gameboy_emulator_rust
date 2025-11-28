@@ -1,0 +1,9 @@
+pub mod cpu_8bit_arithmetic_logical_instructions;
+pub mod cpu_8bit_transfer_input_output_instructions;
+pub mod cpu_16bit_arithmetic_instructions;
+pub mod cpu_16bit_transfer_instructions;
+pub mod cpu_jump_instructions;
+pub mod cpu_bit_operations_instructions;
+pub mod cpu_call_and_return_instructions;
+pub mod cpu_miscellaneous_instructions;
+pub mod cpu_rotate_shift_instructions;
