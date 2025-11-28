@@ -230,4 +230,46 @@ mod tests {
         assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
         assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
     }
+
+    #[test]
+    fn test_rr_r8() {
+        // RR L ; L ← 80h, CY ← 1, Z ← 0, H ← 0, N ← 0
+        // When L = 80h and CY = 0
+        let mut cpu = Cpu::new();
+        cpu.registers.l = 0x80;
+        cpu.flags_register.c = false;
+
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x1D); // RR L (0xCB 0x1D)
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.registers.l, 0x40, "L should be 0x40 (0b01000000) after RR L");
+        assert_eq!(cpu.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.flags_register.z, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_rr_hl() {
+        // RR (HL) ; (HL) ← 11h, CY ← 0, Z ← 0, H ← 0, N ← 0
+        // When (HL) = 22h and CY = 0
+        let mut cpu = Cpu::new();
+        cpu.registers.set_hl(0x1234);
+        cpu.memory_bus.write_byte(0x1234, 0x22);
+        cpu.flags_register.c = false;
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.memory_bus.write_byte(cpu.registers.pc, cb_opcode); // CB prefix
+        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0x1E); // RR (HL) (0xCB 0x1E)
+
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x11, "Memory at HL should be 0x11 after RR (HL)");
+        assert_eq!(cpu.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.flags_register.z, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
 }

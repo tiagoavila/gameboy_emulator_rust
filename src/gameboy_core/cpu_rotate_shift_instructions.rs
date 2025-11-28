@@ -1,9 +1,5 @@
 /// Trait for rotate and shift instruction operations
 pub trait CpuRotateShiftInstructions {
-    fn rl_hl(&mut self);
-    fn rl_r8(&mut self, cb_opcode: u8);
-    fn rrc_r8(&mut self, cb_opcode: u8);
-    fn rrc_hl(&mut self);
     fn rlca(&mut self);
     fn rla(&mut self);
     fn rrca(&mut self);
@@ -13,6 +9,12 @@ pub trait CpuRotateShiftInstructions {
     fn rotate_right_and_update_flags(&mut self, value: u8, rotate_through_c_flag: bool) -> u8;
     fn rlc_r8(&mut self, cb_opcode: u8);
     fn rlc_hl(&mut self);
+    fn rl_r8(&mut self, cb_opcode: u8);
+    fn rl_hl(&mut self);
+    fn rrc_r8(&mut self, cb_opcode: u8);
+    fn rrc_hl(&mut self);
+    fn rr_r8(&mut self, cb_opcode: u8);
+    fn rr_hl(&mut self);
 }
 
 impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
@@ -119,6 +121,30 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let value = self.memory_bus.read_byte(hl);
 
         let rotated_value = self.rotate_right_and_update_flags(value, false);
+        self.memory_bus.write_byte(hl, rotated_value);
+    }
+
+    /// Rotates the contents of a 8-bit register to the right.
+    /// That is, the contents of bit 7 are copied to bit 6,
+    /// and the previous contents of bit 6 (before the copy) are copied to bit 5.
+    /// The same operation is repeated in sequence for the rest of the register.
+    /// The previous contents of the carry (CY) flag are copied to bit 7 of the register.
+    fn rr_r8(&mut self, cb_opcode: u8) {
+        let register = Self::get_source_register(cb_opcode);
+        let value = self.registers.get_8bit_register_value(register);
+
+        let rotated_value = self.rotate_right_and_update_flags(value, true);
+        self.registers
+            .set_8bit_register_value(register, rotated_value);
+    }
+
+    /// Rotates the contents of memory specified by register pair HL to the right.
+    /// The previous contents of the carry (CY) flag are copied to bit 7 of the register.
+    fn rr_hl(&mut self) {
+        let hl = self.registers.get_hl();
+        let value = self.memory_bus.read_byte(hl);
+
+        let rotated_value = self.rotate_right_and_update_flags(value, true);
         self.memory_bus.write_byte(hl, rotated_value);
     }
 
