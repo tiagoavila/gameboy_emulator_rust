@@ -17,3 +17,5 @@ pub mod ppu_components;
 pub mod call_and_return_instructions_test;
 pub mod cpu_miscellaneous_instructions;
 pub mod cpu_rotate_shift_instructions_test;
+pub mod cpu_bit_operations_instructions;
+pub mod cpu_bit_operations_instructions_test;
