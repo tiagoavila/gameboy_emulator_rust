@@ -260,10 +260,9 @@ mod tests {
         cpu.memory_bus.write_byte(0x1234, 0x22);
         cpu.flags_register.c = false;
 
-        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
-        cpu.memory_bus.write_byte(cpu.registers.pc, cb_opcode); // CB prefix
-        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0x1E); // RR (HL) (0xCB 0x1E)
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x1E); // RR (HL) (0xCB 0x1E)
 
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
         cpu.execute(cb_opcode);
 
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x11, "Memory at HL should be 0x11 after RR (HL)");
@@ -271,5 +270,169 @@ mod tests {
         assert_eq!(cpu.flags_register.z, false, "Z flag should be 0");
         assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
         assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_sla_r8() {
+        // SLA D ; D ← 00h, CY ← 1, Z ← 1, H ← 0, N ← 0
+        // When D = 80h and CY = 0
+        let mut cpu = Cpu::new();
+        cpu.registers.d = 0x80;
+        cpu.flags_register.c = false;
+
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x22); // SLA D (0xCB 0x22)
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.registers.d, 0x00, "D should be 0x00 after SLA D");
+        assert_eq!(cpu.flags_register.c, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_sla_hl() {
+        // SLA (HL) ; (HL) ← FEh, CY ← 1, Z ← 0, H ← 0, N ← 0
+        // When (HL) = FFh and CY = 0
+        let mut cpu = Cpu::new();
+        cpu.registers.set_hl(0x1234);
+        cpu.memory_bus.write_byte(0x1234, 0xFF);
+        cpu.flags_register.c = false;
+
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x26); // SLA (HL) (0xCB 0x26)
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0xFE, "Memory at HL should be 0xFE after SLA (HL)");
+        assert_eq!(cpu.flags_register.c, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_sra_r8() {
+        // SRA A ; A ← C5h, CY ← 0, Z ← 0, H ← 0, N ← 0
+        // When A = 8Ah and CY = 0
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0x8A;
+        cpu.flags_register.c = false;
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x2F); // SRA A (0xCB 0x2F)
+
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.registers.a, 0xC5, "A should be 0xC5 after SRA A");
+        assert_eq!(cpu.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.flags_register.z, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_sra_hl() {
+        // SRA (HL) ; (HL) ← 00h, CY ← 1, Z ← 1, H ← 0, N ← 0
+        // When (HL) = 01h and CY = 0
+        let mut cpu = Cpu::new();
+        cpu.registers.set_hl(0x1234);
+        cpu.memory_bus.write_byte(0x1234, 0x01);
+        cpu.flags_register.c = false;
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x2E); // SRA (HL) (0xCB 0x2E)
+
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x00, "Memory at HL should be 0x00 after SRA (HL)");
+        assert_eq!(cpu.flags_register.c, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_srl_r8() {
+        // SRL A ; A ← 00h, CY ← 1, Z ← 1, H ← 0, N ← 0
+        // When A = 01h and CY = 0
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0x01;
+        cpu.flags_register.c = false;
+
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x3F); // SRL A (0xCB 0x3F)
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.registers.a, 0x00, "A should be 0x00 after SRL A");
+        assert_eq!(cpu.flags_register.c, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_srl_hl() {
+        // SRL (HL) ; (HL) ← 7Fh, CY ← 1, Z ← 0, H ← 0, N ← 0
+        // When (HL) = FFh and CY = 0
+        let mut cpu = Cpu::new();
+        cpu.registers.set_hl(0x1234);
+        cpu.memory_bus.write_byte(0x1234, 0xFF);
+        cpu.flags_register.c = false;
+
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x3E); // SRL (HL) (0xCB 0x3E)
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x7F, "Memory at HL should be 0x7F after SRL (HL)");
+        assert_eq!(cpu.flags_register.c, true, "CY flag should be 1");
+        assert_eq!(cpu.flags_register.z, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+    }
+
+    #[test]
+    fn test_swap_r8() {
+        // SWAP A ; A ← 00h, Z ← 1, H ← 0, N ← 0, CY ← 0
+        // When A = 00h
+        let mut cpu = Cpu::new();
+        cpu.registers.a = 0x00;
+        cpu.flags_register.c = true;
+
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x37); // SWAP A (0xCB 0x37)
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.registers.a, 0x00, "A should be 0x00 after SWAP A");
+        assert_eq!(cpu.flags_register.z, true, "Z flag should be 1");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c, false, "CY flag should be 0");
+    }
+
+    #[test]
+    fn test_swap_hl() {
+        // SWAP (HL) ; (HL) ← 0Fh, Z ← 0, H ← 0, N ← 0, CY ← 0
+        // When (HL) = F0h
+        let mut cpu = Cpu::new();
+        cpu.registers.set_hl(0x1234);
+        cpu.memory_bus.write_byte(0x1234, 0xF0);
+        cpu.flags_register.c = true;
+
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x36); // SWAP (HL) (0xCB 0x36)
+
+        let cb_opcode = 0xCB; // Prefix for CB-prefixed instructions
+        cpu.execute(cb_opcode);
+
+        assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x0F, "Memory at HL should be 0x0F after SWAP (HL)");
+        assert_eq!(cpu.flags_register.z, false, "Z flag should be 0");
+        assert_eq!(cpu.flags_register.h, false, "H flag should be 0");
+        assert_eq!(cpu.flags_register.n, false, "N flag should be 0");
+        assert_eq!(cpu.flags_register.c, false, "CY flag should be 0");
     }
 }

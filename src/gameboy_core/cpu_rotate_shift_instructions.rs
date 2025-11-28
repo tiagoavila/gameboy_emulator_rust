@@ -1,11 +1,16 @@
 /// Trait for rotate and shift instruction operations
 pub trait CpuRotateShiftInstructions {
+    fn swap_hl(&mut self);
+    fn swap_r8(&mut self, cb_opcode: u8);
+    fn srl_hl(&mut self);
+    fn srl_r8(&mut self, cb_opcode: u8);
+    fn sra_hl(&mut self);
+    fn sra_r8(&mut self, cb_opcode: u8);
     fn rlca(&mut self);
     fn rla(&mut self);
     fn rrca(&mut self);
     fn rra(&mut self);
     fn rotate_left_and_update_flags(&mut self, value: u8, copy_c_flag_to_bit0: bool) -> u8;
-    fn rotate_left_and_update_flags_u16(&mut self, value: u16) -> u16;
     fn rotate_right_and_update_flags(&mut self, value: u8, rotate_through_c_flag: bool) -> u8;
     fn rlc_r8(&mut self, cb_opcode: u8);
     fn rlc_hl(&mut self);
@@ -15,6 +20,8 @@ pub trait CpuRotateShiftInstructions {
     fn rrc_hl(&mut self);
     fn rr_r8(&mut self, cb_opcode: u8);
     fn rr_hl(&mut self);
+    fn sla_r8(&mut self, cb_opcode: u8);
+    fn sla_hl(&mut self);
 }
 
 impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
@@ -147,6 +154,152 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let rotated_value = self.rotate_right_and_update_flags(value, true);
         self.memory_bus.write_byte(hl, rotated_value);
     }
+    
+    /// Shifts the contents of a 8-bit register to the left. That is, the contents of bit 0 are copied to bit 1 and the 
+    /// previous contents of bit 1 (the contents before the copy operation) are copied to bit 2. 
+    /// The same operation is repeated in sequence for the rest of the operand. 
+    /// The content of bit 7 is copied to CY, and bit 0 is reset.
+    fn sla_r8(&mut self, cb_opcode: u8) {
+        let register = Self::get_source_register(cb_opcode);
+        let mut value = self.registers.get_8bit_register_value(register);
+
+        let bit7 = value >> 7;
+        value <<= 1;
+        
+        self.flags_register.set_c_flag(bit7 == 1);
+        self.flags_register.set_z_flag(value);
+        self.flags_register.n = false;
+        self.flags_register.set_h_flag(false);
+        
+        self.registers.set_8bit_register_value(register, value);
+    }
+    
+    /// Shifts the contents of memory specified by register pair HL to the left.
+    /// The content of bit 7 is copied to CY, and bit 0 is reset.
+    fn sla_hl(&mut self) {
+        let hl = self.registers.get_hl();
+        let mut value = self.memory_bus.read_byte(hl);
+
+        let bit7 = value >> 7;
+        value <<= 1;
+        
+        self.flags_register.set_c_flag(bit7 == 1);
+        self.flags_register.set_z_flag(value);
+        self.flags_register.n = false;
+        self.flags_register.set_h_flag(false);
+        
+        self.memory_bus.write_byte(hl, value);
+    }
+
+    /// Shifts the contents of 8-bit register to the right. That is, the contents of bit 7 are copied to bit 6 and the
+    /// previous contents of bit 6 (the contents before the copy operation) are copied to bit 5. 
+    /// The same operation is repeated in sequence for the rest of the operand. 
+    /// The contents of bit 0 are copied to CY, and the content of bit 7 is unchanged.
+    fn sra_r8(&mut self, cb_opcode: u8) {
+        let register = Self::get_source_register(cb_opcode);
+        let mut value = self.registers.get_8bit_register_value(register);
+
+        let bit7 = value & 0b10000000;
+        let bit0 = value & 0b00000001;
+
+        value >>= 1;
+        value |= bit7;
+        
+        self.flags_register.set_c_flag(bit0 == 1);
+        self.flags_register.set_z_flag(value);
+        self.flags_register.n = false;
+        self.flags_register.set_h_flag(false);
+        
+        self.registers.set_8bit_register_value(register, value);
+    }
+    
+    /// Shifts the contents of memory specified by register pair HL to the right.
+    /// The contents of bit 0 are copied to CY, and the content of bit 7 is unchanged.
+    fn sra_hl(&mut self) {
+        let hl = self.registers.get_hl();
+        let mut value = self.memory_bus.read_byte(hl);
+
+        let bit7 = value & 0b10000000;
+        let bit0 = value & 0b00000001;
+        value >>= 1;
+        value |= bit7;
+        
+        self.flags_register.set_c_flag(bit0 == 1);
+        self.flags_register.set_z_flag(value);
+        self.flags_register.n = false;
+        self.flags_register.set_h_flag(false);
+        
+        self.memory_bus.write_byte(hl, value);
+    }
+
+    /// Shifts the contents of operand m to the right. That is, the contents of bit 7 are copied to bit 6 and the 
+    /// previous contents of bit 6 (the contents before the copy operation) are copied to bit 5. 
+    /// The same operation is repeated in sequence for the rest of the operand. 
+    /// The contents of bit 0 are copied to CY, and bit 7 is reset. 
+    fn srl_r8(&mut self, cb_opcode: u8) {
+        let register = Self::get_source_register(cb_opcode);
+        let mut value = self.registers.get_8bit_register_value(register);
+
+        let bit0 = value & 0b00000001;
+
+        value >>= 1;
+        
+        self.flags_register.set_c_flag(bit0 == 1);
+        self.flags_register.set_z_flag(value);
+        self.flags_register.n = false;
+        self.flags_register.set_h_flag(false);
+        
+        self.registers.set_8bit_register_value(register, value);
+    }
+    
+    /// Shifts the contents of memory specified by register pair HL to the right.
+    /// The contents of bit 0 are copied to CY, and bit 7 is reset
+    fn srl_hl(&mut self) {
+        let hl = self.registers.get_hl();
+        let mut value = self.memory_bus.read_byte(hl);
+
+        let bit0 = value & 0b00000001;
+        value >>= 1;
+        
+        self.flags_register.set_c_flag(bit0 == 1);
+        self.flags_register.set_z_flag(value);
+        self.flags_register.n = false;
+        self.flags_register.set_h_flag(false);
+        
+        self.memory_bus.write_byte(hl, value);
+    }
+    
+    /// Shifts the contents of the lower-order and higher-order 4 bits of a 8-bit register.
+    fn swap_r8(&mut self, cb_opcode: u8) {
+        let register = Self::get_source_register(cb_opcode);
+        let value = self.registers.get_8bit_register_value(register);
+        
+        let high_order_4_bits = value & 0b11110000;
+        let low_order_4_bits = value & 0b00001111;
+        
+        let swapped_value = high_order_4_bits >> 4 | low_order_4_bits << 4;
+        self.registers.set_8bit_register_value(register, swapped_value);
+        self.flags_register.set_z_flag(swapped_value);
+        self.flags_register.n = false;
+        self.flags_register.set_h_flag(false);
+        self.flags_register.set_c_flag(false);
+    }
+    
+    /// Shifts the contents of the lower-order and higher-order 4 bits of a 8-bit register.
+    fn swap_hl(&mut self) {
+        let hl = self.registers.get_hl();
+        let value = self.memory_bus.read_byte(hl);
+        
+        let high_order_4_bits = value & 0b11110000;
+        let low_order_4_bits = value & 0b00001111;
+        
+        let swapped_value = high_order_4_bits >> 4 | low_order_4_bits << 4;
+        self.memory_bus.write_byte(hl, swapped_value);
+        self.flags_register.set_z_flag(swapped_value);
+        self.flags_register.n = false;
+        self.flags_register.set_h_flag(false);
+        self.flags_register.set_c_flag(false);
+    }
 
     /// Rotates a 8-bit value to the left, updating the CPU flags accordingly.
     /// C flag always receives the contents of bit 7.
@@ -196,21 +349,6 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
 
         self.flags_register.set_c_flag(bit0 == 1);
         self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
-
-        value
-    }
-
-    /// Rotates a 16-bit value to the left, updating the CPU flags accordingly.
-    /// The contents of bit 7 are placed in CY.
-    /// Z flag is set if the result is 0; and flags N and H are reset.
-    /// Returns the rotated value.
-    fn rotate_left_and_update_flags_u16(&mut self, mut value: u16) -> u16 {
-        let bit7 = value >> 7;
-        value <<= 1;
-        self.flags_register.set_c_flag(bit7 == 1);
-        self.flags_register.set_z_flag_u16(value);
         self.flags_register.n = false;
         self.flags_register.set_h_flag(false);
 

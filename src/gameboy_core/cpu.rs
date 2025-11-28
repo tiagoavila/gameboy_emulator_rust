@@ -1,5 +1,16 @@
 use crate::gameboy_core::{
-    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_components::{CpuRegisters, FlagsRegister, MemoryBus}, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions, cpu_utils, ppu::Ppu
+    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS},
+    cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions,
+    cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions,
+    cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions,
+    cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions,
+    cpu_call_and_return_instructions::CpuCallAndReturnInstructions,
+    cpu_components::{CpuRegisters, FlagsRegister, MemoryBus},
+    cpu_jump_instructions::CpuJumpInstructions,
+    cpu_miscellaneous_instructions::CpuMiscellaneousInstructions,
+    cpu_rotate_shift_instructions::CpuRotateShiftInstructions,
+    cpu_utils,
+    ppu::Ppu,
 };
 
 pub struct Cpu {
@@ -245,6 +256,22 @@ impl Cpu {
                 self.rr_r8(cb_opcode)
             }
             0b00011110 => self.rr_hl(),
+            v if (v & 0b11111000) == 0b00100000 && Cpu::source_is_8bit_register(cb_opcode) => {
+                self.sla_r8(cb_opcode)
+            }
+            0b00100110 => self.sla_hl(),
+            v if (v & 0b11111000) == 0b00101000 && Cpu::source_is_8bit_register(cb_opcode) => {
+                self.sra_r8(cb_opcode)
+            }
+            0b00101110 => self.sra_hl(),
+            v if (v & 0b11111000) == 0b00111000 && Cpu::source_is_8bit_register(cb_opcode) => {
+                self.srl_r8(cb_opcode)
+            }
+            0b00111110 => self.srl_hl(),
+            v if (v & 0b11111000) == 0b00110000 && Cpu::source_is_8bit_register(cb_opcode) => {
+                self.swap_r8(cb_opcode)
+            }
+            0b00110110 => self.swap_hl(),
             _ => {
                 println!(
                     "*** Unimplemented CB prefix opcode: 0x{:02X} - bin: 0b{:08b} ***",
