@@ -2,8 +2,9 @@ use crate::gameboy_core::cpu::Cpu;
 
 /// Trait for CPU call and return instructions
 pub trait CpuCallAndReturnInstructions {
-    fn ret(&mut self);
+    fn call_imm16(&mut self);
     fn call_cc_imm16(&mut self, opcode: u8);
+    fn ret(&mut self);
     fn rst(&mut self, opcode: u8);
     fn ret_cc(&mut self, opcode: u8);
 }
@@ -18,6 +19,13 @@ impl CpuCallAndReturnInstructions for Cpu {
         self.registers.pc = self.pop_value_from_sp();
     }
 
+    /// Pushes the current value of the PC to the memory stack and loads to the PC the 16-bit immediate value.
+    /// Then next instruction is fetched from the address specified by the new content of PC.
+    fn call_imm16(&mut self) {
+        self.push_value_to_sp(self.registers.pc + 2); // +2 to point to the next instruction after call
+        self.registers.pc = self.get_imm16();
+    }
+
     /// If condition cc matches the flag, the PC value is pushed onto the stack and the PC is loaded with the 16-bit immediate value.
     /// Conditions:
     ///     00 - NZ (Z flag is reset)
@@ -26,8 +34,9 @@ impl CpuCallAndReturnInstructions for Cpu {
     ///     11 - C  (C flag is set)
     fn call_cc_imm16(&mut self, opcode: u8) {
         if self.check_cc_condition(opcode) {
-            self.push_value_to_sp(self.registers.pc);
-            self.registers.pc = self.get_imm16();
+            self.call_imm16();
+        } else {
+            self.registers.increment_pc_twice();
         }
     }
 
@@ -57,6 +66,6 @@ impl CpuCallAndReturnInstructions for Cpu {
         if self.check_cc_condition(opcode) {
             self.registers.pc = self.pop_value_from_sp();
         }
+        // If condition is false, PC stays at the next instruction (already incremented by tick)
     }
-
 }

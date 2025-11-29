@@ -206,9 +206,11 @@ impl Cpu {
             0b11101001 => self.jp_hl(),
 
             // Call and Returns Instructions
-            0b11001001 => self.ret(),
+            0b11001101 => self.call_imm16(),
             v if (v & 0b11000111) == 0b11000100 => self.call_cc_imm16(opcode),
             v if (v & 0b11000111) == 0b11000111 => self.rst(opcode),
+            0b11001001 => self.ret(),
+            v if (v & 0b11000111) == 0b11000000 => self.ret_cc(opcode),
 
             // CB prefix instructions
             0xCB => self.execute_cb_prefix_instructions(),
