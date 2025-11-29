@@ -127,14 +127,14 @@ impl CpuBitOperationsInstructions for Cpu {
         let mut value = self.memory_bus.read_byte(hl);
         
         value = match bit_index {
-            0 => value & !0b01,
-            1 => value & !0b10,
-            2 => value & !0b100,
-            3 => value & !0b1000,
-            4 => value & !0b10000,
-            5 => value & !0b100000,
-            6 => value & !0b1000000,
-            7 => value & !0b10000000,
+            0 => value & 0b11111110,
+            1 => value & 0b11111101,
+            2 => value & 0b11111011,
+            3 => value & 0b11110111,
+            4 => value & 0b11101111,
+            5 => value & 0b11011111,
+            6 => value & 0b10111111,
+            7 => value & 0b01111111,
             _ => unreachable!(),
         };
         
