@@ -199,8 +199,11 @@ impl Cpu {
             // Bit Operations are all inside CB prefix instructions
 
             // Jump Instructions
-            0b00011000 => self.jr_imm8(),
             0b11000011 => self.jp_imm16(),
+            v if (v & 0b11000111) == 0b11000010 => self.jp_cc_imm16(opcode),
+            0b00011000 => self.jr_imm8(),
+            v if (v & 0b11100111) == 0b00100000 => self.jr_cc_imm8(opcode),
+            0b11101001 => self.jp_hl(),
 
             // Call and Returns Instructions
             0b11001001 => self.ret(),

@@ -7,6 +7,7 @@ pub trait CpuJumpInstructions {
     fn jp_cc_imm16(&mut self, opcode: u8);
     fn jr_imm8(&mut self);
     fn jr_cc_imm8(&mut self, opcode: u8);
+    fn jp_hl(&mut self);
 }
 
 impl CpuJumpInstructions for Cpu {
@@ -49,9 +50,25 @@ impl CpuJumpInstructions for Cpu {
 
     /// If condition cc and the flag status match, jumps -127 to +129 steps from the current address.
     /// If cc and the flag status do not match, the instruction following the current JP instruction is executed.
+    /// Note: JR cc uses bits 4-3 for the condition, different from JP cc which uses bits 5-3
     fn jr_cc_imm8(&mut self, opcode: u8) {
-        if self.check_cc_condition(opcode) {
+        // Extract condition from bits 4-3 (for JR cc instructions)
+        let condition = (opcode & 0b00011000) >> 3;
+        let condition_met = match condition {
+            0 => !self.flags_register.z,    // NZ
+            1 => self.flags_register.z,     // Z
+            2 => !self.flags_register.c,    // NC
+            3 => self.flags_register.c,     // C
+            _ => false,
+        };
+        
+        if condition_met {
             self.jr_imm8();
         }
+    }
+    
+    /// Loads the contents of register pair HL in program counter PC.
+    fn jp_hl(&mut self) {
+        self.registers.pc = self.registers.get_hl();
     }
 }
