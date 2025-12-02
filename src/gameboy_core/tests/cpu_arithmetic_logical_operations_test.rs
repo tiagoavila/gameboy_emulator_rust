@@ -5,7 +5,7 @@ mod tests {
     fn setup_cpu_with_a(a: u8, cy: bool) -> Cpu {
         let mut cpu = Cpu::new();
         cpu.registers.a = a;
-        cpu.registers.flags_register.c = cy;
+        cpu.registers.flags.c = cy;
         cpu
     }
 
@@ -18,10 +18,10 @@ mod tests {
         let opcode = 0b10001011; // ADC A, E
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0xF1);
-        assert_eq!(cpu.registers.flags_register.z, false);
-        assert_eq!(cpu.registers.flags_register.h, true);
-        assert_eq!(cpu.registers.flags_register.n, false);
-        assert_eq!(cpu.registers.flags_register.c, false);
+        assert_eq!(cpu.registers.flags.z, false);
+        assert_eq!(cpu.registers.flags.h, true);
+        assert_eq!(cpu.registers.flags.n, false);
+        assert_eq!(cpu.registers.flags.c, false);
     }
 
     #[test]
@@ -34,10 +34,10 @@ mod tests {
         let opcode = 0b11001110; // ADC A, imm8
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x1D);
-        assert_eq!(cpu.registers.flags_register.z, false);
-        assert_eq!(cpu.registers.flags_register.h, false);
-        assert_eq!(cpu.registers.flags_register.n, false);
-        assert_eq!(cpu.registers.flags_register.c, true);
+        assert_eq!(cpu.registers.flags.z, false);
+        assert_eq!(cpu.registers.flags.h, false);
+        assert_eq!(cpu.registers.flags.n, false);
+        assert_eq!(cpu.registers.flags.c, true);
     }
 
     #[test]
@@ -49,10 +49,10 @@ mod tests {
         let opcode = 0b10010011; // SUB E
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x00);
-        assert_eq!(cpu.registers.flags_register.z, true);
-        assert_eq!(cpu.registers.flags_register.h, false);
-        assert_eq!(cpu.registers.flags_register.n, true);
-        assert_eq!(cpu.registers.flags_register.c, false);
+        assert_eq!(cpu.registers.flags.z, true);
+        assert_eq!(cpu.registers.flags.h, false);
+        assert_eq!(cpu.registers.flags.n, true);
+        assert_eq!(cpu.registers.flags.c, false);
     }
 
     #[test]
@@ -65,10 +65,10 @@ mod tests {
         let opcode = 0b11010110; // SUB n
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x2F);
-        assert_eq!(cpu.registers.flags_register.z, false);
-        assert_eq!(cpu.registers.flags_register.h, true);
-        assert_eq!(cpu.registers.flags_register.n, true);
-        assert_eq!(cpu.registers.flags_register.c, false);
+        assert_eq!(cpu.registers.flags.z, false);
+        assert_eq!(cpu.registers.flags.h, true);
+        assert_eq!(cpu.registers.flags.n, true);
+        assert_eq!(cpu.registers.flags.c, false);
     }
 
     #[test]
@@ -81,10 +81,10 @@ mod tests {
         let opcode = 0b10010110; // SUB (HL)
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0xFE);
-        assert_eq!(cpu.registers.flags_register.z, false);
-        assert_eq!(cpu.registers.flags_register.h, false);
-        assert_eq!(cpu.registers.flags_register.n, true);
-        assert_eq!(cpu.registers.flags_register.c, true);
+        assert_eq!(cpu.registers.flags.z, false);
+        assert_eq!(cpu.registers.flags.h, false);
+        assert_eq!(cpu.registers.flags.n, true);
+        assert_eq!(cpu.registers.flags.c, true);
     }
 
     #[test]
@@ -97,10 +97,10 @@ mod tests {
         let opcode = 0b10001110; // ADC A, (HL)
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x00);
-        assert_eq!(cpu.registers.flags_register.z, true);
-        assert_eq!(cpu.registers.flags_register.h, true);
-        assert_eq!(cpu.registers.flags_register.n, false);
-        assert_eq!(cpu.registers.flags_register.c, true);
+        assert_eq!(cpu.registers.flags.z, true);
+        assert_eq!(cpu.registers.flags.h, true);
+        assert_eq!(cpu.registers.flags.n, false);
+        assert_eq!(cpu.registers.flags.c, true);
     }
 
     #[test]
@@ -113,10 +113,10 @@ mod tests {
         let opcode = 0b10000110; // ADD A, (HL)
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x4E);
-        assert_eq!(cpu.registers.flags_register.z, false);
-        assert_eq!(cpu.registers.flags_register.h, false);
-        assert_eq!(cpu.registers.flags_register.n, false);
-        assert_eq!(cpu.registers.flags_register.c, false);
+        assert_eq!(cpu.registers.flags.z, false);
+        assert_eq!(cpu.registers.flags.h, false);
+        assert_eq!(cpu.registers.flags.n, false);
+        assert_eq!(cpu.registers.flags.c, false);
     }
 
     #[test]
@@ -129,10 +129,10 @@ mod tests {
         let opcode = 0b11000110; // ADD A, n
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x3B);
-        assert_eq!(cpu.registers.flags_register.z, false);
-        assert_eq!(cpu.registers.flags_register.h, true);
-        assert_eq!(cpu.registers.flags_register.n, false);
-        assert_eq!(cpu.registers.flags_register.c, true);
+        assert_eq!(cpu.registers.flags.z, false);
+        assert_eq!(cpu.registers.flags.h, true);
+        assert_eq!(cpu.registers.flags.n, false);
+        assert_eq!(cpu.registers.flags.c, true);
     }
 
     #[test]
@@ -144,10 +144,10 @@ mod tests {
         let opcode = 0b10000000; // ADD A, B
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x00);
-        assert_eq!(cpu.registers.flags_register.z, true);
-        assert_eq!(cpu.registers.flags_register.h, true);
-        assert_eq!(cpu.registers.flags_register.n, false);
-        assert_eq!(cpu.registers.flags_register.c, true);
+        assert_eq!(cpu.registers.flags.z, true);
+        assert_eq!(cpu.registers.flags.h, true);
+        assert_eq!(cpu.registers.flags.n, false);
+        assert_eq!(cpu.registers.flags.c, true);
     }
 
     #[test]
@@ -159,10 +159,10 @@ mod tests {
         let opcode = 0b10011100; // SBC A, H
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x10);
-        assert_eq!(cpu.registers.flags_register.z, false);
-        assert_eq!(cpu.registers.flags_register.h, false);
-        assert_eq!(cpu.registers.flags_register.n, true);
-        assert_eq!(cpu.registers.flags_register.c, false);
+        assert_eq!(cpu.registers.flags.z, false);
+        assert_eq!(cpu.registers.flags.h, false);
+        assert_eq!(cpu.registers.flags.n, true);
+        assert_eq!(cpu.registers.flags.c, false);
     }
 
     #[test]
@@ -174,10 +174,10 @@ mod tests {
         let opcode = 0b11011110; // SBC A, imm8
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0x00);
-        assert_eq!(cpu.registers.flags_register.z, true);
-        assert_eq!(cpu.registers.flags_register.h, false);
-        assert_eq!(cpu.registers.flags_register.n, true);
-        assert_eq!(cpu.registers.flags_register.c, false);
+        assert_eq!(cpu.registers.flags.z, true);
+        assert_eq!(cpu.registers.flags.h, false);
+        assert_eq!(cpu.registers.flags.n, true);
+        assert_eq!(cpu.registers.flags.c, false);
     }
 
     #[test]
@@ -189,10 +189,10 @@ mod tests {
         let opcode = 0b10011110; // SBC A, (HL)
         cpu.execute(opcode);
         assert_eq!(cpu.registers.a, 0xEB);
-        assert_eq!(cpu.registers.flags_register.z, false);
-        assert_eq!(cpu.registers.flags_register.h, true);
-        assert_eq!(cpu.registers.flags_register.n, true);
-        assert_eq!(cpu.registers.flags_register.c, true);
+        assert_eq!(cpu.registers.flags.z, false);
+        assert_eq!(cpu.registers.flags.h, true);
+        assert_eq!(cpu.registers.flags.n, true);
+        assert_eq!(cpu.registers.flags.c, true);
     }
 
     #[test]
@@ -256,9 +256,9 @@ mod tests {
         cpu1.execute(opcode_add_hl_bc);
 
         assert_eq!(cpu1.registers.get_hl(), 0x9028);
-        assert_eq!(cpu1.registers.flags_register.h, true);
-        assert_eq!(cpu1.registers.flags_register.n, false);
-        assert_eq!(cpu1.registers.flags_register.c, false);
+        assert_eq!(cpu1.registers.flags.h, true);
+        assert_eq!(cpu1.registers.flags.n, false);
+        assert_eq!(cpu1.registers.flags.c, false);
 
         // Example 2: Starting again with HL = 8A23h
         // ADD HL, HL ; HL ← 1446h, H ← 1, N ← 0, CY ← 1
@@ -269,9 +269,9 @@ mod tests {
         cpu2.execute(opcode_add_hl_hl);
 
         assert_eq!(cpu2.registers.get_hl(), 0x1446);
-        assert_eq!(cpu2.registers.flags_register.h, true);
-        assert_eq!(cpu2.registers.flags_register.n, false);
-        assert_eq!(cpu2.registers.flags_register.c, true);
+        assert_eq!(cpu2.registers.flags.h, true);
+        assert_eq!(cpu2.registers.flags.n, false);
+        assert_eq!(cpu2.registers.flags.c, true);
     }
 
     #[test]
@@ -286,10 +286,10 @@ mod tests {
         cpu.execute(opcode);
 
         assert_eq!(cpu.registers.sp, 0xFFFA, "SP should be 0xFFFA after ADD SP, 2");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
     }
 
     #[test]

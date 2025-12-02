@@ -465,10 +465,10 @@ mod tests {
         assert_eq!(cpu.registers.sp, 0xFFF8, "SP should remain unchanged after LDHL SP, imm8");
 
         // Verify flags: Z reset, N reset, H reset, CY reset
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
     }
 
     #[test]
@@ -485,10 +485,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x1A, "A should contain 0x1A after AND with L");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
         
         // Verify L remains unchanged
         assert_eq!(cpu.registers.l, 0x3F, "L should remain unchanged");
@@ -509,10 +509,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x18, "A should contain 0x18 after AND with immediate value");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
     }
 
     #[test]
@@ -530,10 +530,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x00, "A should contain 0x00 after AND with (HL)");
-        assert_eq!(cpu.registers.flags_register.z, true, "Z flag should be 1");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, true, "Z flag should be 1");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
         
         // Verify memory content remains unchanged
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x00, "Memory content should remain unchanged");
@@ -552,10 +552,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x5A, "A should remain 0x5A after OR with itself");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
     }
 
     #[test]
@@ -573,10 +573,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x5B, "A should contain 0x5B after OR with immediate value");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
     }
 
     #[test]
@@ -594,10 +594,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x5F, "A should contain 0x5F after OR with (HL)");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
         
         // Verify memory content remains unchanged
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x0F, "Memory content should remain unchanged");
@@ -616,10 +616,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x00, "A should be 0x00 after XOR with itself");
-        assert_eq!(cpu.registers.flags_register.z, true, "Z flag should be 1");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, true, "Z flag should be 1");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
     }
 
     #[test]
@@ -637,10 +637,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0xF0, "A should be 0xF0 after XOR with immediate value");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
     }
 
     #[test]
@@ -658,10 +658,10 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x75, "A should be 0x75 after XOR with (HL)");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
         
         // Verify memory content remains unchanged
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x8A, "Memory content should remain unchanged");
@@ -681,10 +681,10 @@ mod tests {
         
         // Verify flags (A should not change in CP operation)
         assert_eq!(cpu.registers.a, 0x3C, "A should remain unchanged after CP");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, true, "N flag should be 1");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, true, "N flag should be 1");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
         
         // Verify B remains unchanged
         assert_eq!(cpu.registers.b, 0x2F, "B should remain unchanged");
@@ -705,10 +705,10 @@ mod tests {
         
         // Verify flags (A should not change in CP operation)
         assert_eq!(cpu.registers.a, 0x3C, "A should remain unchanged after CP");
-        assert_eq!(cpu.registers.flags_register.z, true, "Z flag should be 1");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, true, "N flag should be 1");
-        assert_eq!(cpu.registers.flags_register.c, false, "CY flag should be 0");
+        assert_eq!(cpu.registers.flags.z, true, "Z flag should be 1");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, true, "N flag should be 1");
+        assert_eq!(cpu.registers.flags.c, false, "CY flag should be 0");
     }
 
     #[test]
@@ -726,10 +726,10 @@ mod tests {
         
         // Verify flags (A should not change in CP operation)
         assert_eq!(cpu.registers.a, 0x3C, "A should remain unchanged after CP");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, true, "N flag should be 1");
-        assert_eq!(cpu.registers.flags_register.c, true, "CY flag should be 1");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, true, "N flag should be 1");
+        assert_eq!(cpu.registers.flags.c, true, "CY flag should be 1");
         
         // Verify memory content remains unchanged
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x40, "Memory content should remain unchanged");
@@ -748,13 +748,13 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.a, 0x00, "A should be 0x00 after increment from 0xFF");
-        assert_eq!(cpu.registers.flags_register.z, true, "Z flag should be 1");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.z, true, "Z flag should be 1");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
         
         // Note: CY flag is not affected by INC operation
-        let original_cy = cpu.registers.flags_register.c;
-        assert_eq!(cpu.registers.flags_register.c, original_cy, "CY flag should not be affected by INC");
+        let original_cy = cpu.registers.flags.c;
+        assert_eq!(cpu.registers.flags.c, original_cy, "CY flag should not be affected by INC");
     }
 
     #[test]
@@ -771,13 +771,13 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0x51, "(HL) should be 0x51 after increment");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
         
         // Note: CY flag is not affected by INC operation
-        let original_cy = cpu.registers.flags_register.c;
-        assert_eq!(cpu.registers.flags_register.c, original_cy, "CY flag should not be affected by INC");
+        let original_cy = cpu.registers.flags.c;
+        assert_eq!(cpu.registers.flags.c, original_cy, "CY flag should not be affected by INC");
         
         // Verify HL remains unchanged
         assert_eq!(cpu.registers.get_hl(), 0x1234, "HL should remain unchanged");
@@ -796,13 +796,13 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.registers.l, 0x00, "L should be 0x00 after decrement from 0x01");
-        assert_eq!(cpu.registers.flags_register.z, true, "Z flag should be 1");
-        assert_eq!(cpu.registers.flags_register.h, false, "H flag should be 0");
-        assert_eq!(cpu.registers.flags_register.n, true, "N flag should be 1");
+        assert_eq!(cpu.registers.flags.z, true, "Z flag should be 1");
+        assert_eq!(cpu.registers.flags.h, false, "H flag should be 0");
+        assert_eq!(cpu.registers.flags.n, true, "N flag should be 1");
         
         // Note: CY flag is not affected by DEC operation
-        let original_cy = cpu.registers.flags_register.c;
-        assert_eq!(cpu.registers.flags_register.c, original_cy, "CY flag should not be affected by DEC");
+        let original_cy = cpu.registers.flags.c;
+        assert_eq!(cpu.registers.flags.c, original_cy, "CY flag should not be affected by DEC");
     }
 
     #[test]
@@ -819,13 +819,13 @@ mod tests {
         
         // Verify result and flags
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0xFF, "(HL) should be 0xFF after decrement from 0x00");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, true, "N flag should be 1");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, true, "N flag should be 1");
         
         // Note: CY flag is not affected by DEC operation
-        let original_cy = cpu.registers.flags_register.c;
-        assert_eq!(cpu.registers.flags_register.c, original_cy, "CY flag should not be affected by DEC");
+        let original_cy = cpu.registers.flags.c;
+        assert_eq!(cpu.registers.flags.c, original_cy, "CY flag should not be affected by DEC");
         
         // Verify HL remains unchanged
         assert_eq!(cpu.registers.get_hl(), 0x1234, "HL should remain unchanged");

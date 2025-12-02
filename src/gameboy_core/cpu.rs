@@ -333,10 +333,10 @@ impl Cpu {
     /// Returns true if the condition is met, false otherwise.
     pub(crate) fn check_cc_condition(&self, opcode: u8) -> bool {
         match (opcode & 0b00111000) >> 3 {
-            0 => !self.registers.flags_register.z,
-            1 => self.registers.flags_register.z,
-            0b10 => !self.registers.flags_register.c,
-            0b11 => self.registers.flags_register.c,
+            0 => !self.registers.flags.z,
+            1 => self.registers.flags.z,
+            0b10 => !self.registers.flags.c,
+            0b11 => self.registers.flags.c,
             _ => false,
         }
     }

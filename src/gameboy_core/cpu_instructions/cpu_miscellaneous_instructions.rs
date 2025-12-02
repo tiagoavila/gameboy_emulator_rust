@@ -22,8 +22,8 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
 
     /// Flips the carry flag CY. H and N flags are reset.
     fn ccf(&mut self) {
-        self.registers.flags_register.c = !self.registers.flags_register.c;
-        self.registers.flags_register.h = false;
-        self.registers.flags_register.n = false;
+        self.registers.flags.c = !self.registers.flags.c;
+        self.registers.flags.h = false;
+        self.registers.flags.n = false;
     }
 }

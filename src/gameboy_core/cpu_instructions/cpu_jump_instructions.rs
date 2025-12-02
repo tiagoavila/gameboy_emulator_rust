@@ -55,10 +55,10 @@ impl CpuJumpInstructions for Cpu {
         // Extract condition from bits 4-3 (for JR cc instructions)
         let condition = (opcode & 0b00011000) >> 3;
         let condition_met = match condition {
-            0 => !self.registers.flags_register.z,    // NZ
-            1 => self.registers.flags_register.z,     // Z
-            2 => !self.registers.flags_register.c,    // NC
-            3 => self.registers.flags_register.c,     // C
+            0 => !self.registers.flags.z,    // NZ
+            1 => self.registers.flags.z,     // Z
+            2 => !self.registers.flags.c,    // NC
+            3 => self.registers.flags.c,     // C
             _ => false,
         };
         

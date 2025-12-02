@@ -52,10 +52,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let (result, carry) = self.registers.a.overflowing_add(value);
         let h_flag = crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_add(self.registers.a, value);
         self.registers.a = result;
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.set_c_flag(carry);
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = false;
+        self.registers.flags.set_c_flag(carry);
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(h_flag);
     }
 
     /// Adds 8-bit immediate operand n to the contents of register A and stores the results in register A.
@@ -67,10 +67,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let h_flag = crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_add(self.registers.a, value);
 
         self.registers.a = result;
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.set_c_flag(carry);
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = false;
+        self.registers.flags.set_c_flag(carry);
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(h_flag);
         self.registers.increment_pc();
     }
 
@@ -83,10 +83,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let h_flag = crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_add(self.registers.a, value);
 
         self.registers.a = result;
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.set_c_flag(carry);
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = false;
+        self.registers.flags.set_c_flag(carry);
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(h_flag);
     }
 
     /// Adds the contents of register r and CY to the contents of register A and stores the results in register A.
@@ -99,6 +99,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
     /// Adds the contents of the immediate byte and CY to the contents of register A and stores the results in register A.
     fn adc_a_imm8(&mut self) {
         self.adc_a_value(self.get_imm8());
+        self.registers.increment_pc();
     }
 
     /// Adds the contents of memory specified by the contents of register pair HL and CY to the contents of register A and stores the results in register A.
@@ -113,7 +114,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
     ///           ADC A, 3Bh ; A ← 1Dh, Z ← 0, H ← 0, CY ← 0
     ///           ADC A, (HL) ; A ← 00h, Z ← 1, H ← 1, CY ← 1
     fn adc_a_value(&mut self, value: u8) {
-        let cy = self.registers.flags_register.get_c_flag_u8();
+        let cy = self.registers.flags.get_c_flag_u8();
 
         let (temp_result, temp_carry) = value.overflowing_add(cy);
         let mut h_flag: bool = crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_add(value, cy);
@@ -122,10 +123,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         h_flag |= crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_add(self.registers.a, temp_result);
 
         self.registers.a = final_result;
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.set_c_flag(temp_carry | final_carry);
-        self.registers.flags_register.set_z_flag(final_result);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = false;
+        self.registers.flags.set_c_flag(temp_carry | final_carry);
+        self.registers.flags.set_z_flag_from_u8(final_result);
+        self.registers.flags.set_h_flag(h_flag);
     }
 
     /// Subtracts the contents of register r from the contents of register A and stores the results in register A.
@@ -165,10 +166,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let carry = self.registers.a < value;
 
         self.registers.a = result;
-        self.registers.flags_register.n = true;
-        self.registers.flags_register.set_c_flag(carry);
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(half_carry);
+        self.registers.flags.n = true;
+        self.registers.flags.set_c_flag(carry);
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(half_carry);
     }
 
     /// Subtracts the contents of register r and CY from the contents of register A and stores the results in register A.
@@ -207,7 +208,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         // Carry flag (C): Set if no borrow occurred (A < B)
         let mut carry = self.registers.a < value;
 
-        if self.registers.flags_register.c {
+        if self.registers.flags.c {
             half_carry |= (result & 0x0F) < 1;
             carry |= result < 1;
             let (result_c_flag, _) = result.overflowing_sub(1);
@@ -215,10 +216,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         }
 
         self.registers.a = result;
-        self.registers.flags_register.n = true;
-        self.registers.flags_register.set_c_flag(carry);
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(half_carry);
+        self.registers.flags.n = true;
+        self.registers.flags.set_c_flag(carry);
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(half_carry);
     }
 
     /// Takes the logical-AND for each bit of the contents of register r and register A, and stores the results in register A.
@@ -244,10 +245,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
     /// Takes the logical-AND for each bit of the contents of operand s and register A, and stores the results in register A.
     fn and_a_value(&mut self, value: u8) {
         self.registers.a &= value;
-        self.registers.flags_register.set_h_flag(true);
-        self.registers.flags_register.set_z_flag(self.registers.a);
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.c = false;
+        self.registers.flags.set_h_flag(true);
+        self.registers.flags.set_z_flag_from_u8(self.registers.a);
+        self.registers.flags.n = false;
+        self.registers.flags.c = false;
     }
 
     /// Takes the logical-OR for each bit of the contents of register r and register A, and stores the results in register A.
@@ -273,10 +274,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
     /// Takes the logical-OR for each bit of the contents of operand s and register A, and stores the results in register A.
     fn or_a_value(&mut self, value: u8) {
         self.registers.a |= value;
-        self.registers.flags_register.set_h_flag(false);
-        self.registers.flags_register.set_z_flag(self.registers.a);
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.c = false;
+        self.registers.flags.set_h_flag(false);
+        self.registers.flags.set_z_flag_from_u8(self.registers.a);
+        self.registers.flags.n = false;
+        self.registers.flags.c = false;
     }
 
     /// Takes the logical exclusive-OR for each bit of the contents of register r and register A, and stores the results in register A.
@@ -302,10 +303,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
     /// Takes the logical exclusive-OR for each bit of the contents of operand s and register A, and stores the results in register A.
     fn xor_a_value(&mut self, value: u8) {
         self.registers.a ^= value;
-        self.registers.flags_register.set_h_flag(false);
-        self.registers.flags_register.set_z_flag(self.registers.a);
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.c = false;
+        self.registers.flags.set_h_flag(false);
+        self.registers.flags.set_z_flag_from_u8(self.registers.a);
+        self.registers.flags.n = false;
+        self.registers.flags.c = false;
     }
 
     /// Compares the contents of register r and register A and sets the flag if they are equal.
@@ -342,10 +343,10 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         // Carry flag (C): Set if no borrow occurred (A < B)
         let carry = self.registers.a < value;
 
-        self.registers.flags_register.n = true;
-        self.registers.flags_register.set_c_flag(carry);
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(half_carry);
+        self.registers.flags.n = true;
+        self.registers.flags.set_c_flag(carry);
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(half_carry);
     }
 
     /// Increments the contents of register r by 1.
@@ -355,9 +356,9 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
 
         let (result, _carry) = value.overflowing_add(1);
         let h_flag = crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_add(value, 1);
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = false;
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(h_flag);
 
         self.registers
             .set_8bit_register_value(destination_register, result);
@@ -369,9 +370,9 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
 
         let (result, _carry) = value.overflowing_add(1);
         let h_flag = crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_add(value, 1);
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = false;
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(h_flag);
 
         self.write_memory_value_at_hl(result);
     }
@@ -383,9 +384,9 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
 
         let (result, _carry) = value.overflowing_sub(1);
         let h_flag = crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_sub(value, 1);
-        self.registers.flags_register.n = true;
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = true;
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(h_flag);
 
         self.registers
             .set_8bit_register_value(destination_register, result);
@@ -397,9 +398,9 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
 
         let (result, _carry) = value.overflowing_sub(1);
         let h_flag = crate::gameboy_core::cpu_components::FlagsRegister::calculate_h_flag_on_sub(value, 1);
-        self.registers.flags_register.n = true;
-        self.registers.flags_register.set_z_flag(result);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = true;
+        self.registers.flags.set_z_flag_from_u8(result);
+        self.registers.flags.set_h_flag(h_flag);
 
         self.write_memory_value_at_hl(result);
     }

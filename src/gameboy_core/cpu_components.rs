@@ -15,18 +15,26 @@ pub struct CpuRegisters {
     pub l: u8,
     pub sp: u16,
     pub pc: u16,
-    pub flags_register: FlagsRegister,
+    pub flags: FlagsRegister,
 }
 
+/// Represents the CPU Flags Register, they are stored here as individual boolean fields but in actual hardware 
+/// they are packed into a single byte where each bit represents a different flag.
+/// Bit 7: Z (Zero flag)
+/// Bit 6: N (Subtraction flag)
+/// Bit 5: H (Half Carry flag)
+/// Bit 4: C (Carry flag)
+/// Bits 3-0: Always 0
+/// Therefore: `Z N H C 0 0 0 0`
 pub struct FlagsRegister {
     /// Zero Flag: True if the last operation resulted in zero
     pub z: bool, // Zero Flag
 
-    /// Subtract Flag: True if the last operation was a subtraction, false if it was an addition
-    pub n: bool, // Subtract Flag
-
     /// Half Carry Flag: True if there was a carry from bit 3 to bit 4 in the last operation
     pub h: bool, // Half Carry Flag
+
+    /// Subtract Flag: True if the last operation was a subtraction, false if it was an addition
+    pub n: bool, // Subtract Flag
 
     /// Carry Flag: True if there was a carry from bit 7 to bit 8 in the last operation
     pub c: bool, // Carry Flag
@@ -48,7 +56,7 @@ impl CpuRegisters {
             l: 0x4D,
             sp: 0xFFFE,
             pc: INITIAL_PC,
-            flags_register: FlagsRegister::new(),
+            flags: FlagsRegister::new(),
         }
     }
 
@@ -99,7 +107,7 @@ impl CpuRegisters {
     }
 
     pub fn get_af(&self) -> u16 {
-        ((self.a as u16) << 8) | self.flags_register.get_flags_as_u8() as u16
+        ((self.a as u16) << 8) | self.flags.get_flags_as_u8() as u16
     }
 
     pub fn get_bc(&self) -> u16 {
@@ -128,7 +136,7 @@ impl CpuRegisters {
     
     pub fn set_af(&mut self, value: u16) {
         self.a = (value >> 8) as u8;
-        self.flags_register.set_flags_from_u8((value & 0b011111111) as u8);
+        self.flags.set_flags_from_u8((value & 0b011111111) as u8);
     }
 
     pub fn set_bc(&mut self, value: u16) {
@@ -196,15 +204,24 @@ impl FlagsRegister {
     pub fn calculate_h_flag_on_sub(value1: u8, value2: u8) -> bool {
         (value1 & 0x0F) < (value2 & 0x0F)
     }
+    
+    /// Sets the z_flag to the provided boolean value
+    pub fn set_z_flag(&mut self, z_flag: bool) {
+        self.z = z_flag;
+    }
 
     /// This bit is set if and only if the result of an operation is zero
-    pub fn set_z_flag(&mut self, result: u8) {
+    pub fn set_z_flag_from_u8(&mut self, result: u8) {
         self.z = result == 0;
     }
 
     /// The same as set_z_flag but for u16 values
-    pub fn set_z_flag_u16(&mut self, result: u16) {
+    pub fn set_z_flag_from_u16(&mut self, result: u16) {
         self.z = result == 0;
+    }
+    
+    pub(crate) fn set_n_flag(&mut self, value: bool) {
+        self.n = value;
     }
 
     /// Returns the c_flag as u8 to be used in ADC instructions

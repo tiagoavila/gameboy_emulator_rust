@@ -74,10 +74,11 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
         let (result, carry) = self.registers.sp.overflowing_add(imm8);
         let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.sp, imm8);
         self.registers.set_hl(result);
-        self.registers.flags_register.n = false;
-        self.registers.flags_register.z = false;
-        self.registers.flags_register.set_c_flag(carry);
-        self.registers.flags_register.set_h_flag(h_flag);
+        self.registers.flags.n = false;
+        self.registers.flags.z = false;
+        self.registers.flags.set_c_flag(carry);
+        self.registers.flags.set_h_flag(h_flag);
+        self.registers.increment_pc();
     }
 
     /// Stores the lower byte of SP at address nn specified by the 16-bit immediate operand nn and the upper byte of SP at address nn + 1.

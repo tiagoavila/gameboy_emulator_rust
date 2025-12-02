@@ -76,10 +76,10 @@ pub fn print_state(cpu: &Cpu) {
     println!("  PC: 0x{:04X} ({})", cpu.registers.pc, cpu.registers.pc);
 
     println!("\nFlags Register:");
-    println!("  Z (Zero):     {}", cpu.registers.flags_register.z);
-    println!("  N (Subtract): {}", cpu.registers.flags_register.n);
-    println!("  H (Half-carry): {}", cpu.registers.flags_register.h);
-    println!("  C (Carry):    {}", cpu.registers.flags_register.c);
+    println!("  Z (Zero):     {}", cpu.registers.flags.z);
+    println!("  N (Subtract): {}", cpu.registers.flags.n);
+    println!("  H (Half-carry): {}", cpu.registers.flags.h);
+    println!("  C (Carry):    {}", cpu.registers.flags.c);
     println!("================================================================\n");
 }
 
@@ -89,7 +89,7 @@ pub fn log_to_dr_gameboy(cpu: &Cpu, pc_before_increment: u16) -> io::Result<()> 
     let file_path = "dr_gameboy_log.txt";
     
     // Get the flags register as a u8 value
-    let flags_value = cpu.registers.flags_register.get_flags_as_u8();
+    let flags_value = cpu.registers.flags.get_flags_as_u8();
     
     // Read the 4 bytes at PC and PC+1, PC+2, PC+3
     let pc_mem_0 = cpu.memory_bus.read_byte(pc_before_increment);

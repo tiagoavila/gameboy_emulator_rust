@@ -75,7 +75,7 @@ mod tests {
         
         // NZ (Non-Zero) condition = bit 3-4 of opcode = 0b00
         // Z flag should be false for NZ to be true
-        cpu.registers.flags_register.z = false;
+        cpu.registers.flags.z = false;
         
         let initial_pc = cpu.registers.pc;
         
@@ -102,7 +102,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // NZ (Non-Zero) condition, but Z flag is true (condition fails)
-        cpu.registers.flags_register.z = true;
+        cpu.registers.flags.z = true;
         
         let initial_pc = cpu.registers.pc;
         
@@ -133,7 +133,7 @@ mod tests {
         
         // Z (Zero) condition = bit 3-4 of opcode = 0b01
         // Z flag should be true for Z condition to be true
-        cpu.registers.flags_register.z = true;
+        cpu.registers.flags.z = true;
         
         let initial_pc = cpu.registers.pc;
         
@@ -158,7 +158,7 @@ mod tests {
         
         // NC (No Carry) condition = bit 3-4 of opcode = 0b10
         // C flag should be false for NC condition to be true
-        cpu.registers.flags_register.c = false;
+        cpu.registers.flags.c = false;
         
         let initial_pc = cpu.registers.pc;
         
@@ -183,7 +183,7 @@ mod tests {
         
         // C (Carry) condition = bit 3-4 of opcode = 0b11
         // C flag should be true for C condition to be true
-        cpu.registers.flags_register.c = true;
+        cpu.registers.flags.c = true;
         
         let initial_pc = cpu.registers.pc;
         
@@ -380,7 +380,7 @@ mod tests {
         cpu.registers.pc = initial_pc;
         
         // Set Z flag true so NZ condition will fail
-        cpu.registers.flags_register.z = true;
+        cpu.registers.flags.z = true;
         
         // Set up memory with JR NZ offset (we'll use 0x20 for JR NZ opcode, 0x14 for offset +20)
         // But we need to set up opcode 0x20 (JR NZ, n) in memory at initial_pc
@@ -416,7 +416,7 @@ mod tests {
         cpu.registers.pc = initial_pc;
         
         // Set Z flag to true for Z condition
-        cpu.registers.flags_register.z = true;
+        cpu.registers.flags.z = true;
         
         // Set up memory with JR Z opcode (0x28) and offset +20 (0x14)
         cpu.memory_bus.write_byte(initial_pc, 0x28); // JR Z, n opcode
@@ -470,7 +470,7 @@ mod tests {
         cpu.registers.pc = initial_pc;
         
         // C flag true for C condition
-        cpu.registers.flags_register.c = true;
+        cpu.registers.flags.c = true;
         
         // Set up memory with JR C opcode (0x38) and offset -15 (0xF1)
         cpu.memory_bus.write_byte(initial_pc, 0x38); // JR C, n opcode
@@ -643,7 +643,7 @@ mod tests {
         cpu.registers.pc = initial_pc;
         
         // Test NZ jump when Z flag is clear
-        cpu.registers.flags_register.z = false;
+        cpu.registers.flags.z = false;
         cpu.memory_bus.write_byte(initial_pc, 0xC2); // JP NZ opcode
         cpu.memory_bus.write_byte(initial_pc + 1, 0x20); // Low byte
         cpu.memory_bus.write_byte(initial_pc + 2, 0x10); // High byte
@@ -653,7 +653,7 @@ mod tests {
         
         // Reset and test Z jump when Z flag is set
         cpu.registers.pc = initial_pc;
-        cpu.registers.flags_register.z = true;
+        cpu.registers.flags.z = true;
         cpu.memory_bus.write_byte(initial_pc, 0xCA); // JP Z opcode
         cpu.memory_bus.write_byte(initial_pc + 1, 0x30); // Low byte
         cpu.memory_bus.write_byte(initial_pc + 2, 0x20); // High byte

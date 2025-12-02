@@ -16,9 +16,9 @@ mod tests {
         cpu.execute(cb_opcode);
 
         assert_eq!(cpu.registers.b, 0b10000000, "B should remain 0b10000000 (0x80) after BIT 7, B");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0 (bit 7 is set)");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0 (bit 7 is set)");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
     }
 
     #[test]
@@ -35,9 +35,9 @@ mod tests {
         cpu.execute(cb_opcode);
 
         assert_eq!(cpu.registers.l, 0b11101111, "L should remain 0b11101111 (0xEF) after BIT 4, L");
-        assert_eq!(cpu.registers.flags_register.z, true, "Z flag should be 1 (bit 4 is not set)");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.z, true, "Z flag should be 1 (bit 4 is not set)");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
     }
 
     #[test]
@@ -55,9 +55,9 @@ mod tests {
         cpu.execute(cb_opcode);
 
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0b11111110, "Memory at HL should remain 0b11111110 (0xFE) after BIT 0, (HL)");
-        assert_eq!(cpu.registers.flags_register.z, true, "Z flag should be 1 (bit 0 is not set)");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.z, true, "Z flag should be 1 (bit 0 is not set)");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
     }
 
     #[test]
@@ -75,9 +75,9 @@ mod tests {
         cpu.execute(cb_opcode);
 
         assert_eq!(cpu.memory_bus.read_byte(0x1234), 0b11111110, "Memory at HL should remain 0b11111110 (0xFE) after BIT 1, (HL)");
-        assert_eq!(cpu.registers.flags_register.z, false, "Z flag should be 0 (bit 1 is set)");
-        assert_eq!(cpu.registers.flags_register.h, true, "H flag should be 1");
-        assert_eq!(cpu.registers.flags_register.n, false, "N flag should be 0");
+        assert_eq!(cpu.registers.flags.z, false, "Z flag should be 0 (bit 1 is set)");
+        assert_eq!(cpu.registers.flags.h, true, "H flag should be 1");
+        assert_eq!(cpu.registers.flags.n, false, "N flag should be 0");
     }
 
     #[test]
