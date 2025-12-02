@@ -1,3 +1,0 @@
-*** Unimplemented opcode: 0xCD - bin: 0b11001101 ***
-*** Unimplemented opcode: 0x2F - bin: 0b00101111 ***
-

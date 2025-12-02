@@ -76,3 +76,7 @@ pub const SCY: u16 = 0xFF42;
 /// The value ranges from 0 to 255, where 0 means no horizontal scrolling,
 /// and 255 means the background is scrolled left by 255 pixels.
 pub const SCX: u16 = 0xFF43;
+
+/// LY indicates the current horizontal line, which might be about to be drawn, being drawn, or just been drawn.
+/// LY can hold any value from 0 to 153, with values from 144 to 153 indicating the VBlank period. 
+pub const LY: u16 = 0xFF44;

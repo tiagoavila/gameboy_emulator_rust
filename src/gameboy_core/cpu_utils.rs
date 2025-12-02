@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{self, Read},
+    io::{self, Read, Write},
 };
 
 use crate::gameboy_core::cpu::Cpu;
@@ -22,14 +22,26 @@ pub fn read_rom(file_path: &str) -> io::Result<Vec<u8>> {
     Ok(buffer)
 }
 
-pub fn print_state_if_debug_mode(cpu: &Cpu, opcode: u8) {
+pub fn log_state(cpu: &Cpu, opcode: u8) -> io::Result<()> {
     if cpu.is_debug_mode {
-        println!(
-            "Fetched opcode: 0x{:02X} (binary: 0b{:08b}) at PC: 0x{:04X}",
+        let file_path = "instructions_log.txt";
+        
+        // Format the log line
+        let log_line = format!(
+            "Fetched opcode: 0x{:02X} (binary: 0b{:08b}) at PC: 0x{:04X}\n",
             opcode, opcode, cpu.registers.pc
         );
-        print_state(cpu);
+        
+        // Open the file in append mode and write the log line
+        let mut file = File::options()
+            .create(true)
+            .append(true)
+            .open(file_path)?;
+        
+        file.write_all(log_line.as_bytes())?;
     }
+    
+    Ok(())
 }
 
 /// Prints the CPU registers and flags register to the console
@@ -64,9 +76,60 @@ pub fn print_state(cpu: &Cpu) {
     println!("  PC: 0x{:04X} ({})", cpu.registers.pc, cpu.registers.pc);
 
     println!("\nFlags Register:");
-    println!("  Z (Zero):     {}", cpu.flags_register.z);
-    println!("  N (Subtract): {}", cpu.flags_register.n);
-    println!("  H (Half-carry): {}", cpu.flags_register.h);
-    println!("  C (Carry):    {}", cpu.flags_register.c);
+    println!("  Z (Zero):     {}", cpu.registers.flags_register.z);
+    println!("  N (Subtract): {}", cpu.registers.flags_register.n);
+    println!("  H (Half-carry): {}", cpu.registers.flags_register.h);
+    println!("  C (Carry):    {}", cpu.registers.flags_register.c);
     println!("================================================================\n");
+}
+
+/// Appends a line to a Dr. Gameboy log file with CPU state in the format:
+/// A:00 F:11 B:22 C:33 D:44 E:55 H:66 L:77 SP:8888 PC:9999 PCMEM:AA,BB,CC,DD
+pub fn log_to_dr_gameboy(cpu: &Cpu, pc_before_increment: u16) -> io::Result<()> {
+    let file_path = "dr_gameboy_log.txt";
+    
+    // Get the flags register as a u8 value
+    let flags_value = cpu.registers.flags_register.get_flags_as_u8();
+    
+    // Read the 4 bytes at PC and PC+1, PC+2, PC+3
+    let pc_mem_0 = cpu.memory_bus.read_byte(pc_before_increment);
+    let pc_mem_1 = cpu.memory_bus.read_byte(pc_before_increment.wrapping_add(1));
+    let pc_mem_2 = cpu.memory_bus.read_byte(pc_before_increment.wrapping_add(2));
+    let pc_mem_3 = cpu.memory_bus.read_byte(pc_before_increment.wrapping_add(3));
+    
+    // Format the log line
+    let log_line = format!(
+        "A:{:02X} F:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}\n",
+        cpu.registers.a,
+        flags_value,
+        cpu.registers.b,
+        cpu.registers.c,
+        cpu.registers.d,
+        cpu.registers.e,
+        cpu.registers.h,
+        cpu.registers.l,
+        cpu.registers.sp,
+        pc_before_increment,
+        pc_mem_0,
+        pc_mem_1,
+        pc_mem_2,
+        pc_mem_3
+    );
+    
+    // Open the file in append mode and write the log line
+    let mut file = File::options()
+        .create(true)
+        .append(true)
+        .open(file_path)?;
+    
+    file.write_all(log_line.as_bytes())?;
+    
+    Ok(())
+}
+
+pub(crate) fn clear_dr_gameboy_log() -> io::Result<()> {
+    let file_path = "dr_gameboy_log.txt";
+    let mut file = File::create(file_path)?;
+    file.set_len(0)?;
+    Ok(())
 }

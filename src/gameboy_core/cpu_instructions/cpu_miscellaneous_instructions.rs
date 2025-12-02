@@ -1,5 +1,6 @@
 
 pub trait CpuMiscellaneousInstructions {
+    fn ei(&mut self);
     fn nop(&mut self);
     fn di(&mut self);
     fn ccf(&mut self);
@@ -14,11 +15,15 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     fn di(&mut self) {
         self.di_instruction_pending = true;
     }
+    
+    fn ei(&mut self) {
+        self.ei_instruction_pending = true;
+    }
 
     /// Flips the carry flag CY. H and N flags are reset.
     fn ccf(&mut self) {
-        self.flags_register.c = !self.flags_register.c;
-        self.flags_register.h = false;
-        self.flags_register.n = false;
+        self.registers.flags_register.c = !self.registers.flags_register.c;
+        self.registers.flags_register.h = false;
+        self.registers.flags_register.n = false;
     }
 }

@@ -26,9 +26,9 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
             FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.get_hl(), value);
 
         self.registers.set_hl(result);
-        self.flags_register.n = false;
-        self.flags_register.set_c_flag(carry);
-        self.flags_register.set_h_flag(h_flag);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_c_flag(carry);
+        self.registers.flags_register.set_h_flag(h_flag);
     }
 
     /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in SP.
@@ -38,10 +38,10 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
         let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.sp, imm8);
 
         self.registers.sp = result;
-        self.flags_register.n = false;
-        self.flags_register.z = false;
-        self.flags_register.set_c_flag(carry);
-        self.flags_register.set_h_flag(h_flag);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.z = false;
+        self.registers.flags_register.set_c_flag(carry);
+        self.registers.flags_register.set_h_flag(h_flag);
         self.registers.increment_pc();
     }
 

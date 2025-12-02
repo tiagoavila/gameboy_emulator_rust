@@ -1,6 +1,6 @@
 use crate::gameboy_core::{
     constants::{
-        BGP, INITIAL_PC, LCDC, MEMORY_SIZE, SCX, SCY,
+        BGP, INITIAL_PC, LCDC, LY, MEMORY_SIZE, SCX, SCY
     },
     ppu_components::LcdcRegister,
 };
@@ -15,6 +15,7 @@ pub struct CpuRegisters {
     pub l: u8,
     pub sp: u16,
     pub pc: u16,
+    pub flags_register: FlagsRegister,
 }
 
 pub struct FlagsRegister {
@@ -47,6 +48,7 @@ impl CpuRegisters {
             l: 0x4D,
             sp: 0xFFFE,
             pc: INITIAL_PC,
+            flags_register: FlagsRegister::new(),
         }
     }
 
@@ -96,9 +98,9 @@ impl CpuRegisters {
         }
     }
 
-    pub fn get_af(&self) -> u16 {
-        ((self.a as u16) << 8) | 0 // Flags register is not implemented here
-    }
+    // pub fn get_af(&self) -> u16 {
+    //     ((self.a as u16) << 8) | 0 // Flags register is not implemented here
+    // }
 
     pub fn get_bc(&self) -> u16 {
         ((self.b as u16) << 8) | (self.c as u16)
@@ -151,8 +153,8 @@ impl FlagsRegister {
         Self {
             z: true,
             n: false,
-            h: false,
-            c: false,
+            h: true,
+            c: true,
         }
     }
 
@@ -208,6 +210,38 @@ impl FlagsRegister {
     pub fn set_h_flag(&mut self, h_flag: bool) {
         self.h = h_flag;
     }
+
+    /// Returns the flags register as a u8 value
+    /// Bit 7: Z (Zero flag)
+    /// Bit 6: N (Subtraction flag)
+    /// Bit 5: H (Half Carry flag)
+    /// Bit 4: C (Carry flag)
+    /// Bits 3-0: Always 0
+    pub fn get_flags_as_u8(&self) -> u8 {
+        let mut value = 0u8;
+        
+        if self.z {
+            value |= 0b10000000; // Set bit 7
+        }
+        if self.n {
+            value |= 0b01000000; // Set bit 6
+        }
+        if self.h {
+            value |= 0b00100000; // Set bit 5
+        }
+        if self.c {
+            value |= 0b00010000; // Set bit 4
+        }
+        
+        value
+    }
+    
+    pub(crate) fn set_flags_from_u8(&mut self, value: u8) {
+        self.z = (value & 0b10000000) != 0;
+        self.n = (value & 0b01000000) != 0;
+        self.h = (value & 0b00100000) != 0;
+        self.c = (value & 0b00010000) != 0;
+    }
 }
 
 impl MemoryBus {
@@ -218,6 +252,11 @@ impl MemoryBus {
     }
 
     pub fn read_byte(&self, address: u16) -> u8 {
+        if address == LY {
+            // LY register always returns the current scanline (for simplicity, we return 0 here)
+            return 0x90;
+        }
+
         self.memory[address as usize]
     }
 

@@ -228,7 +228,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set Z flag to false (condition NZ is true)
-        cpu.flags_register.z = false;
+        cpu.registers.flags_register.z = false;
         
         let initial_pc = 0x7FFC;
         cpu.registers.pc = initial_pc;
@@ -263,7 +263,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set Z flag to true (condition NZ is false)
-        cpu.flags_register.z = true;
+        cpu.registers.flags_register.z = true;
         
         let initial_pc = 0x7FFC;
         cpu.registers.pc = initial_pc;
@@ -294,7 +294,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set Z flag to true (condition Z is true)
-        cpu.flags_register.z = true;
+        cpu.registers.flags_register.z = true;
         
         let initial_pc = 0x8000;
         cpu.registers.pc = initial_pc;
@@ -328,7 +328,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set Z flag to false (condition Z is false)
-        cpu.flags_register.z = false;
+        cpu.registers.flags_register.z = false;
         
         let initial_pc = 0x8000;
         cpu.registers.pc = initial_pc;
@@ -357,7 +357,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set C flag to false (condition NC is true)
-        cpu.flags_register.c = false;
+        cpu.registers.flags_register.c = false;
         
         let initial_pc = 0x6000;
         cpu.registers.pc = initial_pc;
@@ -387,7 +387,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set C flag to true (condition NC is false)
-        cpu.flags_register.c = true;
+        cpu.registers.flags_register.c = true;
         
         let initial_pc = 0x6000;
         cpu.registers.pc = initial_pc;
@@ -413,7 +413,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set C flag to true (condition C is true)
-        cpu.flags_register.c = true;
+        cpu.registers.flags_register.c = true;
         
         let initial_pc = 0x5000;
         cpu.registers.pc = initial_pc;
@@ -443,7 +443,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set C flag to false (condition C is false)
-        cpu.flags_register.c = false;
+        cpu.registers.flags_register.c = false;
         
         let initial_pc = 0x5000;
         cpu.registers.pc = initial_pc;
@@ -469,8 +469,8 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set both flags to test all conditions
-        cpu.flags_register.z = true;
-        cpu.flags_register.c = true;
+        cpu.registers.flags_register.z = true;
+        cpu.registers.flags_register.c = true;
         
         // Test Z condition (true)
         cpu.registers.pc = 0x4000;
@@ -500,8 +500,8 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Clear both flags to test all conditions
-        cpu.flags_register.z = false;
-        cpu.flags_register.c = false;
+        cpu.registers.flags_register.z = false;
+        cpu.registers.flags_register.c = false;
         
         // Test Z condition (false)
         cpu.registers.pc = 0x4000;
@@ -738,7 +738,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set Z flag to true (condition Z is true)
-        cpu.flags_register.z = true;
+        cpu.registers.flags_register.z = true;
         
         // Set up the scenario from the provided data:
         // CALL from 8000H pushes return address 8003H to stack
@@ -774,7 +774,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set Z flag to false (condition Z is false)
-        cpu.flags_register.z = false;
+        cpu.registers.flags_register.z = false;
         
         let ret_address = 0x9000;
         cpu.registers.pc = ret_address;
@@ -808,7 +808,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set Z flag to false (condition NZ is true)
-        cpu.flags_register.z = false;
+        cpu.registers.flags_register.z = false;
         
         let ret_address = 0x8000;
         cpu.registers.pc = ret_address;
@@ -839,7 +839,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set Z flag to true (condition NZ is false)
-        cpu.flags_register.z = true;
+        cpu.registers.flags_register.z = true;
         
         let ret_address = 0x8000;
         cpu.registers.pc = ret_address;
@@ -870,7 +870,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set C flag to true (condition C is true)
-        cpu.flags_register.c = true;
+        cpu.registers.flags_register.c = true;
         
         let ret_address = 0x7000;
         cpu.registers.pc = ret_address;
@@ -898,7 +898,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set C flag to false (condition C is false)
-        cpu.flags_register.c = false;
+        cpu.registers.flags_register.c = false;
         
         let ret_address = 0x7000;
         cpu.registers.pc = ret_address;
@@ -926,7 +926,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set C flag to false (condition NC is true)
-        cpu.flags_register.c = false;
+        cpu.registers.flags_register.c = false;
         
         let ret_address = 0x6000;
         cpu.registers.pc = ret_address;
@@ -954,7 +954,7 @@ mod tests {
         let mut cpu = Cpu::new();
         
         // Set C flag to true (condition NC is false)
-        cpu.flags_register.c = true;
+        cpu.registers.flags_register.c = true;
         
         let ret_address = 0x6000;
         cpu.registers.pc = ret_address;
@@ -1007,7 +1007,7 @@ mod tests {
         assert_eq!(cpu.registers.sp, 0xFFFA, "SP after two CALLs");
         
         // RET Z from 0x6000 with Z flag true (should return)
-        cpu.flags_register.z = true;
+        cpu.registers.flags_register.z = true;
         cpu.memory_bus.write_byte(0x6000, 0xC8);
         
         cpu.registers.increment_pc();
@@ -1017,7 +1017,7 @@ mod tests {
         assert_eq!(cpu.registers.sp, 0xFFFC, "SP should be restored");
         
         // RET Z from 0x5003 with Z flag false (should skip)
-        cpu.flags_register.z = false;
+        cpu.registers.flags_register.z = false;
         cpu.memory_bus.write_byte(0x5003, 0xC8);
         
         cpu.registers.increment_pc();

@@ -29,9 +29,9 @@ impl CpuBitOperationsInstructions for Cpu {
             _ => unreachable!(),
         };
 
-        self.flags_register.set_z_flag(bit);
-        self.flags_register.set_h_flag(true);
-        self.flags_register.n = false;
+        self.registers.flags_register.set_z_flag(bit);
+        self.registers.flags_register.set_h_flag(true);
+        self.registers.flags_register.n = false;
     }
     
     /// Test bit b in memory location pointed by HL register. Set Z flag if the bit is 0.
@@ -52,9 +52,9 @@ impl CpuBitOperationsInstructions for Cpu {
             _ => unreachable!(),
         };
 
-        self.flags_register.set_z_flag(bit);
-        self.flags_register.set_h_flag(true);
-        self.flags_register.n = false;
+        self.registers.flags_register.set_z_flag(bit);
+        self.registers.flags_register.set_h_flag(true);
+        self.registers.flags_register.n = false;
     }
 
     /// Sets to 1 the specified bit in specified 8-bit register.

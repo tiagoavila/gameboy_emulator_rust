@@ -4,26 +4,28 @@ use crate::gameboy_core::{
 
 pub struct Cpu {
     pub registers: CpuRegisters,
-    pub flags_register: FlagsRegister,
     pub memory_bus: MemoryBus,
     pub is_debug_mode: bool,
     pub ppu: Ppu,
     pub cycles: u64,
     pub ime: bool,
     pub di_instruction_pending: bool,
+    pub(crate) ei_instruction_pending: bool,
+    pub executed_instructions_count: u64,
 }
 
 impl Cpu {
     pub fn new() -> Self {
         let mut cpu = Self {
             registers: CpuRegisters::new(),
-            flags_register: FlagsRegister::new(),
             memory_bus: MemoryBus::new(),
             is_debug_mode: false,
             ppu: Ppu::new(),
             cycles: 0,
             ime: false,
             di_instruction_pending: false,
+            ei_instruction_pending: false,
+            executed_instructions_count: 0,
         };
         cpu.initialize_memory_registers();
 
@@ -49,13 +51,19 @@ impl Cpu {
 
     /// Perform a single CPU tick: fetch, decode, and execute one instruction.
     pub fn tick(&mut self) {
-        let opcode = self.fetch_opcode();
+        self.executed_instructions_count += 1;
 
-        cpu_utils::print_state_if_debug_mode(self, opcode);
+        let opcode = self.fetch_opcode();
+        let opcode_ex = format!("0x{:02X}", opcode);
+
+        cpu_utils::log_state(self, opcode).unwrap();
+        cpu_utils::log_to_dr_gameboy(&self, self.registers.pc).unwrap();
 
         self.registers.increment_pc();
         self.execute(opcode);
 
+
+        self.enable_ime_if_ei_instruction_pending(opcode);
         self.disable_ime_if_di_instruction_pending(opcode);
     }
 
@@ -217,6 +225,7 @@ impl Cpu {
 
             // General-Purpose Arithmetic Operations and CPU Control Instructions
             0xF3 => self.di(),
+            0xFB => self.ei(),
             0x3F => self.ccf(),
 
             _ => {
@@ -324,10 +333,10 @@ impl Cpu {
     /// Returns true if the condition is met, false otherwise.
     pub(crate) fn check_cc_condition(&self, opcode: u8) -> bool {
         match (opcode & 0b00111000) >> 3 {
-            0 => !self.flags_register.z,
-            1 => self.flags_register.z,
-            0b10 => !self.flags_register.c,
-            0b11 => self.flags_register.c,
+            0 => !self.registers.flags_register.z,
+            1 => self.registers.flags_register.z,
+            0b10 => !self.registers.flags_register.c,
+            0b11 => self.registers.flags_register.c,
             _ => false,
         }
     }
@@ -409,17 +418,24 @@ impl Cpu {
         self.is_debug_mode = value;
     }
 
+    fn enable_ime_if_ei_instruction_pending(&mut self, opcode: u8) {
+        if opcode != 0xFB && self.ei_instruction_pending {
+            self.set_ime(true);
+            self.ei_instruction_pending = false;
+        }
+    }
+
     /// If DI instructions is pending it means we need to set ime to false
     fn disable_ime_if_di_instruction_pending(&mut self, opcode: u8) {
         // ensure the current opcode is to the DI instruction
         if opcode != 0xF3 && self.di_instruction_pending {
             self.set_ime(false);
+            self.di_instruction_pending = false;
         }
     }
 
     /// Set the IME (Interrupt Master Enable) flag
     fn set_ime(&mut self, value: bool) {
         self.ime = value;
-        self.di_instruction_pending = false;
     }
 }

@@ -10,9 +10,12 @@ pub mod gameboy_core;
 const SCREEN_SCALE: usize = 3;
 
 fn main() {
-    let rom_file = "tests/blarggs_test_roms/cpu_instrs.gb";
+    // let rom_file = "tests/blarggs_test_roms/cpu_instrs.gb";
+    let rom_file = "tests/blarggs_test_roms/03-op sp,hl.gb";
     // let rom_file = "tests/nintendo_logo.gb";
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();
+    // clear dr gameboy log file at start
+    cpu_utils::clear_dr_gameboy_log().unwrap();
 
     let mut cpu = gameboy_core::cpu::Cpu::start(rom_binary, false);
 
@@ -97,7 +100,7 @@ fn run_gameboy(cpu: &mut gameboy_core::cpu::Cpu) {
     let mut buffer: Vec<u32> =
         vec![0xFFFFFF; SCREEN_WIDTH * SCREEN_HEIGHT * SCREEN_SCALE * SCREEN_SCALE];
 
-    // cpu.set_debug_mode(true);
+    cpu.set_debug_mode(true);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         for _ in 0..70224 {

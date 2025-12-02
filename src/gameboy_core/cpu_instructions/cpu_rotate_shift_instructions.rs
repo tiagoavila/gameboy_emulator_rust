@@ -166,10 +166,10 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let bit7 = value >> 7;
         value <<= 1;
         
-        self.flags_register.set_c_flag(bit7 == 1);
-        self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(bit7 == 1);
+        self.registers.flags_register.set_z_flag(value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
         
         self.registers.set_8bit_register_value(register, value);
     }
@@ -183,10 +183,10 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let bit7 = value >> 7;
         value <<= 1;
         
-        self.flags_register.set_c_flag(bit7 == 1);
-        self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(bit7 == 1);
+        self.registers.flags_register.set_z_flag(value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
     }
@@ -205,10 +205,10 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         value >>= 1;
         value |= bit7;
         
-        self.flags_register.set_c_flag(bit0 == 1);
-        self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(bit0 == 1);
+        self.registers.flags_register.set_z_flag(value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
         
         self.registers.set_8bit_register_value(register, value);
     }
@@ -224,10 +224,10 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         value >>= 1;
         value |= bit7;
         
-        self.flags_register.set_c_flag(bit0 == 1);
-        self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(bit0 == 1);
+        self.registers.flags_register.set_z_flag(value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
     }
@@ -244,10 +244,10 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
 
         value >>= 1;
         
-        self.flags_register.set_c_flag(bit0 == 1);
-        self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(bit0 == 1);
+        self.registers.flags_register.set_z_flag(value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
         
         self.registers.set_8bit_register_value(register, value);
     }
@@ -261,10 +261,10 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let bit0 = value & 0b00000001;
         value >>= 1;
         
-        self.flags_register.set_c_flag(bit0 == 1);
-        self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(bit0 == 1);
+        self.registers.flags_register.set_z_flag(value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
     }
@@ -279,10 +279,10 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         
         let swapped_value = high_order_4_bits >> 4 | low_order_4_bits << 4;
         self.registers.set_8bit_register_value(register, swapped_value);
-        self.flags_register.set_z_flag(swapped_value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
-        self.flags_register.set_c_flag(false);
+        self.registers.flags_register.set_z_flag(swapped_value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(false);
     }
     
     /// Shifts the contents of the lower-order and higher-order 4 bits of a 8-bit register.
@@ -295,10 +295,10 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         
         let swapped_value = high_order_4_bits >> 4 | low_order_4_bits << 4;
         self.memory_bus.write_byte(hl, swapped_value);
-        self.flags_register.set_z_flag(swapped_value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
-        self.flags_register.set_c_flag(false);
+        self.registers.flags_register.set_z_flag(swapped_value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(false);
     }
 
     /// Rotates a 8-bit value to the left, updating the CPU flags accordingly.
@@ -313,17 +313,17 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         value <<= 1;
 
         if rotate_through_c_flag {
-            if self.flags_register.c {
+            if self.registers.flags_register.c {
                 value |= 0b00000001;
             }
         } else if bit7 == 1 {
             value |= 0b00000001;
         }
 
-        self.flags_register.set_c_flag(bit7 == 1);
-        self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(bit7 == 1);
+        self.registers.flags_register.set_z_flag(value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
 
         value
     }
@@ -340,17 +340,17 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         value >>= 1;
 
         if rotate_through_c_flag {
-            if self.flags_register.c {
+            if self.registers.flags_register.c {
                 value |= 0b10000000;
             }
         } else if bit0 == 1 {
             value |= 0b10000000;
         }
 
-        self.flags_register.set_c_flag(bit0 == 1);
-        self.flags_register.set_z_flag(value);
-        self.flags_register.n = false;
-        self.flags_register.set_h_flag(false);
+        self.registers.flags_register.set_c_flag(bit0 == 1);
+        self.registers.flags_register.set_z_flag(value);
+        self.registers.flags_register.n = false;
+        self.registers.flags_register.set_h_flag(false);
 
         value
     }
