@@ -43,10 +43,7 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
             0b00 => self.registers.get_bc(),
             0b01 => self.registers.get_de(),
             0b10 => self.registers.get_hl(),
-            0b11 => {
-                let f = self.registers.flags_register.get_flags_as_u8();
-                ((self.registers.a as u16) << 8) | (f as u16)
-            }
+            0b11 => self.registers.get_af(),
             _ => 0,
         };
 
@@ -65,11 +62,8 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
             0b00 => self.registers.set_bc(value),
             0b01 => self.registers.set_de(value),
             0b10 => self.registers.set_hl(value),
-            0b11 => {
-                self.registers.a = (value >> 8) as u8;
-                self.registers.flags_register
-                    .set_flags_from_u8((value & 0b011111111) as u8);
-            }
+            0b11 => self.registers.set_af(value),
+
             _ => (),
         }
     }

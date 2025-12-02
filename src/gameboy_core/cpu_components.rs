@@ -98,9 +98,9 @@ impl CpuRegisters {
         }
     }
 
-    // pub fn get_af(&self) -> u16 {
-    //     ((self.a as u16) << 8) | 0 // Flags register is not implemented here
-    // }
+    pub fn get_af(&self) -> u16 {
+        ((self.a as u16) << 8) | self.flags_register.get_flags_as_u8() as u16
+    }
 
     pub fn get_bc(&self) -> u16 {
         ((self.b as u16) << 8) | (self.c as u16)
@@ -124,6 +124,11 @@ impl CpuRegisters {
         let hl = self.get_hl();
         let (new_hl, _overflowed) = hl.overflowing_sub(1);
         self.set_hl(new_hl);
+    }
+    
+    pub fn set_af(&mut self, value: u16) {
+        self.a = (value >> 8) as u8;
+        self.flags_register.set_flags_from_u8((value & 0b011111111) as u8);
     }
 
     pub fn set_bc(&mut self, value: u16) {
