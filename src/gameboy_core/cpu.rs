@@ -1,5 +1,5 @@
 use crate::gameboy_core::{
-    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, FlagsRegister, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, ppu::Ppu
+    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, ppu::Ppu
 };
 
 pub struct Cpu {
@@ -54,14 +54,12 @@ impl Cpu {
         self.executed_instructions_count += 1;
 
         let opcode = self.fetch_opcode();
-        let opcode_ex = format!("0x{:02X}", opcode);
 
         cpu_utils::log_state(self, opcode).unwrap();
         cpu_utils::log_to_dr_gameboy(&self, self.registers.pc).unwrap();
 
         self.registers.increment_pc();
         self.execute(opcode);
-
 
         self.enable_ime_if_ei_instruction_pending(opcode);
         self.disable_ime_if_di_instruction_pending(opcode);

@@ -1,4 +1,4 @@
-use crate::gameboy_core::cpu_components::FlagsRegister;
+use crate::gameboy_core::cpu_instructions::cpu_helpers::CpuAddOperation;
 
 /// Trait for 16-bit transfer instruction operations
 pub trait Cpu16BitTransferInstructions {
@@ -69,14 +69,16 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
     }
 
     /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in HL.
+    /// The Z flag is reset. The N flag is reset.
+    /// H flag is set if there is a carry from bit 3 and C flag is set if there is a carry from bit 7.
     fn ld_hl_sp_imm8(&mut self) {
-        let imm8 = self.get_imm8() as u16;
-        let (result, carry) = self.registers.sp.overflowing_add(imm8);
-        let h_flag = FlagsRegister::calculate_h_flag_on_add_u16_numbers(self.registers.sp, imm8);
+        let imm8 = self.get_imm8();
+        let sp = self.registers.sp;
+        let (result, c_flag, h_flag) = sp.add_u8_as_signed(imm8);
         self.registers.set_hl(result);
         self.registers.flags.n = false;
         self.registers.flags.z = false;
-        self.registers.flags.set_c_flag(carry);
+        self.registers.flags.set_c_flag(c_flag);
         self.registers.flags.set_h_flag(h_flag);
         self.registers.increment_pc();
     }

@@ -276,8 +276,6 @@ mod tests {
         
         cpu.registers.increment_pc();
         
-        let initial_cycles = cpu.cycles;
-        
         // Execute CALL NZ via execute function
         cpu.execute(0xC4);
         
@@ -790,7 +788,6 @@ mod tests {
         cpu.registers.increment_pc();
         
         let initial_sp = cpu.registers.sp;
-        let initial_cycles = cpu.cycles;
         
         // Execute RET Z via execute function
         cpu.execute(0xC8);

@@ -1,4 +1,4 @@
-use crate::gameboy_core::cpu_components::FlagsRegister;
+use crate::gameboy_core::{cpu_components::FlagsRegister, cpu_instructions::cpu_helpers::CpuAddOperation};
 
 /// Trait for 16-bit arithmetic instruction operations
 pub trait Cpu16BitArithmeticInstructions {
@@ -35,28 +35,33 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
     fn add_sp_imm8(&mut self) {
         let imm8 = self.get_imm8(); // u8 (e.g., 0xFF)
         let sp_val = self.registers.sp;
+        
+        let (result, c_flag, h_flag) = sp_val.add_u8_as_signed(imm8);
 
-        // --- 1. Calculate Flags (C and H) ---
-        // For ADD SP, n (Opcode E8h), the Carry (C) and Half Carry (H) flags are calculated
-        // based on the unsigned addition of the low byte of SP and the immediate operand (imm8),
-        // checking for carries out of bit 7 (C) and bit 3 (H), respectively [1, 2].
-        let lower_sp = (sp_val & 0x00FF) as u8;
-        let (_flag_result, c_carry) = lower_sp.overflowing_add(imm8);
-        let h_carry = FlagsRegister::calculate_h_flag_on_add(lower_sp, imm8);
+        // // --- 1. Calculate Flags (C and H) ---
+        // // For ADD SP, n (Opcode E8h), the Carry (C) and Half Carry (H) flags are calculated
+        // // based on the unsigned addition of the low byte of SP and the immediate operand (imm8),
+        // // checking for carries out of bit 7 (C) and bit 3 (H), respectively [1, 2].
+        // let lower_sp = (sp_val & 0x00FF) as u8;
+        // let (_flag_result, c_carry) = lower_sp.overflowing_add(imm8);
+        // let h_carry = FlagsRegister::calculate_h_flag_on_add(lower_sp, imm8);
 
-        // --- 2. Calculate SP result (16-bit signed arithmetic) ---
-        // Convert the 8-bit unsigned immediate value (u8: 0xFF) into a signed 8-bit integer (i8: -1).
-        let imm8_signed = imm8 as i8;
+        // // --- 2. Calculate SP result (16-bit signed arithmetic) ---
+        // // Convert the 8-bit unsigned immediate value (u8: 0xFF) into a signed 8-bit integer (i8: -1).
+        // let imm8_signed = imm8 as i8;
 
-        // Sign-extend the offset to a 16-bit signed integer (i16: 0xFFFF).
-        let offset_signed: i16 = imm8_signed as i16;
+        // // Sign-extend the offset to a 16-bit signed integer (i16: 0xFFFF).
+        // // We can´t convert the u8 directly to i16 because Rust will do zero extension instead of sign extension.
+        // // Sign extension means that the sign bit (most significant bit) is replicated to fill the higher bits which will represent
+        // // the same negative value in a larger bit-width.
+        // let offset_signed: i16 = imm8_signed as i16;
 
-        // Convert the resulting 16-bit signed offset to its unsigned representation (u16)
-        // to allow safe wrapping addition with sp_val (u16).
-        let offset_u16 = offset_signed as u16;
+        // // Convert the resulting 16-bit signed offset to its unsigned representation (u16)
+        // // to allow safe wrapping addition with sp_val (u16).
+        // let offset_u16 = offset_signed as u16;
 
-        // Perform the 16-bit addition. The Game Boy SP wraps around 16 bits.
-        let result = sp_val.wrapping_add(offset_u16);
+        // // Perform the 16-bit addition. The Game Boy SP wraps around 16 bits.
+        // let result = sp_val.wrapping_add(offset_u16);
 
         // --- 3. Update registers and flags ---
         self.registers.sp = result;
@@ -65,8 +70,8 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.n = false;
         self.registers.flags.z = false;
 
-        self.registers.flags.set_c_flag(c_carry);
-        self.registers.flags.set_h_flag(h_carry);
+        self.registers.flags.set_c_flag(c_flag);
+        self.registers.flags.set_h_flag(h_flag);
 
         self.registers.increment_pc();
     } 

@@ -129,7 +129,7 @@ pub fn log_to_dr_gameboy(cpu: &Cpu, pc_before_increment: u16) -> io::Result<()> 
 
 pub(crate) fn clear_dr_gameboy_log() -> io::Result<()> {
     let file_path = "dr_gameboy_log.txt";
-    let mut file = File::create(file_path)?;
+    let file = File::create(file_path)?;
     file.set_len(0)?;
     Ok(())
 }

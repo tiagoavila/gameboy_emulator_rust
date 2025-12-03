@@ -7,3 +7,4 @@ pub mod cpu_bit_operations_instructions;
 pub mod cpu_call_and_return_instructions;
 pub mod cpu_miscellaneous_instructions;
 pub mod cpu_rotate_shift_instructions;
+pub mod cpu_helpers;
