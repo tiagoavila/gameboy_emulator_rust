@@ -221,7 +221,9 @@ impl Cpu {
             // CB prefix instructions
             0xCB => self.execute_cb_prefix_instructions(),
 
-            // General-Purpose Arithmetic Operations and CPU Control Instructions
+            // General-Purpose Arithmetic Operations and CPU Control Instructions - Miscellaneous
+            0x27 => self.daa(),
+            0x2F => self.cpl(),
             0xF3 => self.di(),
             0xFB => self.ei(),
             0x3F => self.ccf(),

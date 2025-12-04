@@ -11,7 +11,8 @@ const SCREEN_SCALE: usize = 3;
 
 fn main() {
     // let rom_file = "tests/blarggs_test_roms/cpu_instrs.gb";
-    let rom_file = "tests/blarggs_test_roms/03-op sp,hl.gb";
+    let rom_file = "tests/blarggs_test_roms/01-special.gb";
+    // let rom_file = "tests/blarggs_test_roms/03-op sp,hl.gb";
     // let rom_file = "tests/nintendo_logo.gb";
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();
     // clear dr gameboy log file at start
