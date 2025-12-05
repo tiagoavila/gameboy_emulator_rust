@@ -14,8 +14,8 @@ This emulator is tested against Blargg's comprehensive CPU instruction test suit
 - `02-interrupts.gb` - Interrupt handling ⏳
 - `03-op sp,hl.gb` - Stack pointer and HL register operations ✅
 - `04-op r,imm.gb` - Register and immediate value operations ✅
-- `05-op rp.gb` - Register pair operations ⏳
-- `06-ld r,r.gb` - Register to register load operations ⏳
+- `05-op rp.gb` - Register pair operations ✅ 
+- `06-ld r,r.gb` - Register to register load operations ✅ 
 - `07-jr,jp,call,ret,rst.gb` - Jump and call instructions ⏳
 - `08-misc instrs.gb` - Miscellaneous instructions ⏳
 - `09-op r,r.gb` - Register to register operations ⏳

@@ -14,7 +14,10 @@ fn main() {
     // let rom_file = "tests/blarggs_test_roms/01-special.gb";
     // let rom_file = "tests/blarggs_test_roms/02-interrupts.gb";
     // let rom_file = "tests/blarggs_test_roms/03-op sp,hl.gb";
-    let rom_file = "tests/blarggs_test_roms/04-op r,imm.gb";
+    // let rom_file = "tests/blarggs_test_roms/04-op r,imm.gb";
+    // let rom_file = "tests/blarggs_test_roms/05-op rp.gb";
+    // let rom_file = "tests/blarggs_test_roms/06-ld r,r.gb";
+    let rom_file = "tests/blarggs_test_roms/07-jr,jp,call,ret,rst.gb";
     // let rom_file = "tests/nintendo_logo.gb";
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();
     // clear dr gameboy log file at start
