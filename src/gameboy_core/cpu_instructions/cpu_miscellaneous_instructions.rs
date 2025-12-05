@@ -1,6 +1,7 @@
 pub trait CpuMiscellaneousInstructions {
     fn daa(&mut self);
     fn cpl(&mut self);
+    fn scf(&mut self);
     fn ei(&mut self);
     fn nop(&mut self);
     fn di(&mut self);
@@ -67,9 +68,17 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false); // H flag always cleared after DAA
     }
 
+    /// Inverts all bits in register A. N and H flags are set.
     fn cpl(&mut self) {
         self.registers.a = !self.registers.a;
         self.registers.flags.n = true;
         self.registers.flags.h = true;
+    }
+    
+    /// Sets the carry flag CY. H and N flags are reset.
+    fn scf(&mut self) {
+        self.registers.flags.set_c_flag(true);
+        self.registers.flags.h = false;
+        self.registers.flags.n = false;
     }
 }

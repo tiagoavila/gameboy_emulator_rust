@@ -7,6 +7,7 @@ pub trait CpuCallAndReturnInstructions {
     fn ret(&mut self);
     fn rst(&mut self, opcode: u8);
     fn ret_cc(&mut self, opcode: u8);
+    fn reti(&mut self);
 }
 
 impl CpuCallAndReturnInstructions for Cpu {
@@ -67,5 +68,11 @@ impl CpuCallAndReturnInstructions for Cpu {
             self.registers.pc = self.pop_value_from_sp();
         }
         // If condition is false, PC stays at the next instruction (already incremented by tick)
+    }
+    
+    // Pop two bytes from stack & jump to that address then enable interrupts.
+    fn reti(&mut self) {
+        self.registers.pc = self.pop_value_from_sp();
+        self.set_ime(true);
     }
 }

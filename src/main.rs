@@ -13,9 +13,8 @@ fn main() {
     // let rom_file = "tests/blarggs_test_roms/cpu_instrs.gb";
 
     // TODO: test below roms after fixing instructions they test
-    let rom_file = "tests/blarggs_test_roms/02-interrupts.gb";
-    // let rom_file = "tests/blarggs_test_roms/07-jr,jp,call,ret,rst.gb";
-    // let rom_file = "tests/blarggs_test_roms/09-op r,r.gb";
+    // let rom_file = "tests/blarggs_test_roms/02-interrupts.gb";
+    let rom_file = "tests/blarggs_test_roms/09-op r,r.gb";
     // let rom_file = "tests/blarggs_test_roms/10-bit ops.gb";
     // let rom_file = "tests/blarggs_test_roms/11-op a,(hl).gb";
     // let rom_file = "tests/nintendo_logo.gb";

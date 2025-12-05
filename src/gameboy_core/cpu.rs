@@ -216,6 +216,7 @@ impl Cpu {
             v if (v & 0b11000111) == 0b11000100 => self.call_cc_imm16(opcode),
             v if (v & 0b11000111) == 0b11000111 => self.rst(opcode),
             0b11001001 => self.ret(),
+            0xD9 => self.reti(),
             v if (v & 0b11000111) == 0b11000000 => self.ret_cc(opcode),
 
             // CB prefix instructions
@@ -227,6 +228,7 @@ impl Cpu {
             0xF3 => self.di(),
             0xFB => self.ei(),
             0x3F => self.ccf(),
+            0x37 => self.scf(),
 
             _ => {
                 println!(
@@ -418,6 +420,7 @@ impl Cpu {
         self.is_debug_mode = value;
     }
 
+    /// if EI instruction is pending it means we need to set ime to true
     fn enable_ime_if_ei_instruction_pending(&mut self, opcode: u8) {
         if opcode != 0xFB && self.ei_instruction_pending {
             self.set_ime(true);
@@ -425,7 +428,7 @@ impl Cpu {
         }
     }
 
-    /// If DI instructions is pending it means we need to set ime to false
+    /// If DI instruction is pending it means we need to set ime to false
     fn disable_ime_if_di_instruction_pending(&mut self, opcode: u8) {
         // ensure the current opcode is to the DI instruction
         if opcode != 0xF3 && self.di_instruction_pending {
@@ -435,7 +438,7 @@ impl Cpu {
     }
 
     /// Set the IME (Interrupt Master Enable) flag
-    fn set_ime(&mut self, value: bool) {
+    pub(crate) fn set_ime(&mut self, value: bool) {
         self.ime = value;
     }
 }
