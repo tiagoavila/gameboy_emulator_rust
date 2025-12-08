@@ -19,7 +19,7 @@ This emulator is tested against Blargg's comprehensive CPU instruction test suit
 - `07-jr,jp,call,ret,rst.gb` - Jump and call instructions ✅ 
 - `08-misc instrs.gb` - Miscellaneous instructions ✅ 
 - `09-op r,r.gb` - Register to register operations ✅ 
-- `10-bit ops.gb` - Bit operations ⏳
-- `11-op a,(hl).gb` - Accumulator and indirect HL operations ⏳
+- `10-bit ops.gb` - Bit operations ✅  
+- `11-op a,(hl).gb` - Accumulator and indirect HL operations ✅   
 - `cpu_instrs.gb` - Complete CPU instruction test ⏳
 

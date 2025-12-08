@@ -26,11 +26,13 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
         };
 
         self.registers.increment_pc_twice();
+        self.increment_cycles(3);
     }
 
     /// Loads the contents of register pair HL in stack pointer SP.
     fn ld_sp_hl(&mut self) {
         self.registers.sp = self.registers.get_hl();
+        self.increment_two_cycles();
     }
 
     /// Pushes the contents of register pair qq (a 16-bit register) onto the memory stack. First 1 is subtracted from SP and the
@@ -48,6 +50,7 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
         };
 
         self.push_value_to_sp(value);
+        self.increment_cycles(4);
     }
 
     /// Pops contents from the memory stack and into register pair qq.
@@ -66,6 +69,7 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
 
             _ => (),
         }
+        self.increment_cycles(3);
     }
 
     /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in HL.
@@ -81,6 +85,7 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_c_flag(c_flag);
         self.registers.flags.set_h_flag(h_flag);
         self.registers.increment_pc();
+        self.increment_cycles(3);
     }
 
     /// Stores the lower byte of SP at address nn specified by the 16-bit immediate operand nn and the upper byte of SP at address nn + 1.
@@ -93,5 +98,6 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
         self.memory_bus.write_byte(imm16 + 1, sp_higher_byte);
 
         self.registers.increment_pc_twice();
+        self.increment_cycles(5);
     }
 }

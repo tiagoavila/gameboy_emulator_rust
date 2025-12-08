@@ -15,6 +15,7 @@ impl CpuJumpInstructions for Cpu {
     fn jp_imm16(&mut self) {
         let imm16 = self.get_imm16();
         self.registers.pc = imm16;
+        self.increment_cycles(4);
     }
 
     /// Loads operand nn in the PC if condition cc and the flag status match.
@@ -26,6 +27,7 @@ impl CpuJumpInstructions for Cpu {
             self.jp_imm16();
         } else {
             self.registers.increment_pc_twice();
+            self.increment_cycles(3);
         }
     }
 
@@ -44,8 +46,7 @@ impl CpuJumpInstructions for Cpu {
         // We need to convert i8 to i16 first to handle negative numbers correctly
         self.registers.pc = (self.registers.pc as i16).wrapping_add(imm8 as i16) as u16;
 
-        // Cycles: 12 (3 machine cycles)
-        self.cycles += 12;
+        self.increment_cycles(3);
     }
 
     /// If condition cc and the flag status match, jumps -127 to +129 steps from the current address.
@@ -66,11 +67,13 @@ impl CpuJumpInstructions for Cpu {
             self.jr_imm8();
         } else {
             self.registers.increment_pc(); // Move past the offset byte
+            self.increment_two_cycles();
         }
     }
     
     /// Loads the contents of register pair HL in program counter PC.
     fn jp_hl(&mut self) {
         self.registers.pc = self.registers.get_hl();
+        self.increment_one_cycle();
     }
 }

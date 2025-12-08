@@ -56,6 +56,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         self.registers.flags.set_c_flag(carry);
         self.registers.flags.set_z_flag_from_u8(result);
         self.registers.flags.set_h_flag(h_flag);
+        self.increment_one_cycle();
     }
 
     /// Adds 8-bit immediate operand n to the contents of register A and stores the results in register A.
@@ -72,6 +73,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         self.registers.flags.set_z_flag_from_u8(result);
         self.registers.flags.set_h_flag(h_flag);
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     /// Adds the contents of memory specified by the contents of register pair HL to the contents of register A and stores the results in register A.
@@ -87,6 +89,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         self.registers.flags.set_c_flag(carry);
         self.registers.flags.set_z_flag_from_u8(result);
         self.registers.flags.set_h_flag(h_flag);
+        self.increment_two_cycles();
     }
 
     /// Adds the contents of register r and CY to the contents of register A and stores the results in register A.
@@ -94,12 +97,14 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.adc_a_value(value);
+        self.increment_one_cycle();
     }
 
     /// Adds the contents of the immediate byte and CY to the contents of register A and stores the results in register A.
     fn adc_a_imm8(&mut self) {
         self.adc_a_value(self.get_imm8());
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     /// Adds the contents of memory specified by the contents of register pair HL and CY to the contents of register A and stores the results in register A.
@@ -134,6 +139,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.sub_a_value(value);
+        self.increment_one_cycle();
     }
 
     /// Subtracts the 8-bit immediate operand n from the contents of register A and stores the results in register A.
@@ -141,12 +147,14 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let value = self.get_imm8();
         self.sub_a_value(value);
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     /// Subtracts the contents of memory specified by the contents of register pair HL from the contents of register A and stores the results in register A.
     fn sub_a_hl(&mut self) {
         let value = self.get_memory_value_at_hl();
         self.sub_a_value(value);
+        self.increment_two_cycles();
     }
 
     /// Subtracts the contents of operand s from the contents of register A and stores the results in register A.
@@ -177,6 +185,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.sbc_a_value(value);
+        self.increment_one_cycle();
     }
 
     /// Subtracts the 8-bit immediate operand n and CY from the contents of register A and stores the results in register A.
@@ -184,12 +193,14 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let value = self.get_imm8();
         self.sbc_a_value(value);
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     /// Subtracts the contents of memory specified by the contents of register pair HL and CY from the contents of register A and stores the results in register A.
     fn sbc_a_hl(&mut self) {
         let value = self.get_memory_value_at_hl();
         self.sbc_a_value(value);
+        self.increment_two_cycles();
     }
 
     /// Subtracts the contents of operand s and CY from the contents of register A and stores the results in register A.
@@ -227,6 +238,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.and_a_value(value);
+        self.increment_one_cycle();
     }
 
     /// Takes the logical-AND for each bit of the contents of immediate operand and register A, and stores the results in register A.
@@ -234,12 +246,14 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let value = self.get_imm8();
         self.and_a_value(value);
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     /// Takes the logical-AND for each bit of the contents of memory specified by the contents of register pair HL and register A, and stores the results in register A.
     fn and_a_hl(&mut self) {
         let value = self.get_memory_value_at_hl();
         self.and_a_value(value);
+        self.increment_two_cycles();
     }
 
     /// Takes the logical-AND for each bit of the contents of operand s and register A, and stores the results in register A.
@@ -256,6 +270,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.or_a_value(value);
+        self.increment_one_cycle();
     }
 
     /// Takes the logical-OR for each bit of the contents of immediate operand and register A, and stores the results in register A.
@@ -263,12 +278,14 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let value = self.get_imm8();
         self.or_a_value(value);
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     /// Takes the logical-OR for each bit of the contents of memory specified by the contents of register pair HL and register A, and stores the results in register A.
     fn or_a_hl(&mut self) {
         let value = self.get_memory_value_at_hl();
         self.or_a_value(value);
+        self.increment_two_cycles();
     }
 
     /// Takes the logical-OR for each bit of the contents of operand s and register A, and stores the results in register A.
@@ -285,6 +302,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.xor_a_value(value);
+        self.increment_one_cycle();
     }
 
     /// Takes the logical exclusive-OR for each bit of the contents of immediate operand and register A, and stores the results in register A.
@@ -292,12 +310,14 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let value = self.get_imm8();
         self.xor_a_value(value);
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     /// Takes the logical exclusive-OR for each bit of the contents of memory specified by the contents of register pair HL and register A, and stores the results in register A.
     fn xor_a_hl(&mut self) {
         let value = self.get_memory_value_at_hl();
         self.xor_a_value(value);
+        self.increment_two_cycles();
     }
 
     /// Takes the logical exclusive-OR for each bit of the contents of operand s and register A, and stores the results in register A.
@@ -314,6 +334,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let source = Cpu::get_source_register(opcode);
         let value = self.registers.get_8bit_register_value(source);
         self.cp_a_value(value);
+        self.increment_one_cycle();
     }
 
     /// Compares the contents of 8-bit immediate operand n and register A and sets the flag if they are equal.
@@ -321,12 +342,14 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         let value = self.get_imm8();
         self.cp_a_value(value);
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     /// Compares the contents of memory specified by the contents of register pair HL and register A and sets the flag if they are equal.
     fn cp_a_hl(&mut self) {
         let value = self.get_memory_value_at_hl();
         self.cp_a_value(value);
+        self.increment_two_cycles();
     }
 
     /// Compares the contents of operand s and register A and sets the flag if they are equal. r, n, and (HL) are used for operand s.
@@ -362,6 +385,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
 
         self.registers
             .set_8bit_register_value(destination_register, result);
+        self.increment_one_cycle();
     }
 
     /// Increments by 1 the contents of memory specified by register pair HL.
@@ -375,6 +399,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         self.registers.flags.set_h_flag(h_flag);
 
         self.write_memory_value_at_hl(result);
+        self.increment_two_cycles();
     }
 
     /// Subtract 1 from the contents of register r.
@@ -390,6 +415,7 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
 
         self.registers
             .set_8bit_register_value(destination_register, result);
+        self.increment_one_cycle();
     }
 
     /// Decrements by 1 the contents of memory specified by register pair HL.
@@ -403,5 +429,6 @@ impl Cpu8BitArithmeticLogicalInstructions for Cpu {
         self.registers.flags.set_h_flag(h_flag);
 
         self.write_memory_value_at_hl(result);
+        self.increment_cycles(3);
     }
 }

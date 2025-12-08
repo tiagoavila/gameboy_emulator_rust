@@ -230,7 +230,7 @@ mod tests {
         // Cycles should be incremented by 12
         assert_eq!(
             cpu.cycles,
-            initial_cycles + 12,
+            initial_cycles + 3,
             "Cycles should be incremented by 12"
         );
     }

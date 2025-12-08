@@ -1,4 +1,6 @@
 pub trait CpuMiscellaneousInstructions {
+    fn stop(&mut self);
+    fn halt(&mut self);
     fn daa(&mut self);
     fn cpl(&mut self);
     fn scf(&mut self);
@@ -11,16 +13,19 @@ pub trait CpuMiscellaneousInstructions {
 impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     /// No Operation - Do nothing for one CPU cycle.
     fn nop(&mut self) {
+        self.increment_one_cycle();
         return;
     }
 
     /// This instruction disables interrupts but not immediately. Interrupts are disabled after instruction after DI is executed.
     fn di(&mut self) {
         self.di_instruction_pending = true;
+        self.increment_one_cycle();
     }
 
     fn ei(&mut self) {
         self.ei_instruction_pending = true;
+        self.increment_one_cycle();
     }
 
     /// Flips the carry flag CY. H and N flags are reset.
@@ -28,6 +33,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.c = !self.registers.flags.c;
         self.registers.flags.h = false;
         self.registers.flags.n = false;
+        self.increment_one_cycle();
     }
 
     /// Adjusts register A to form a correct BCD representation after a binary addition or subtraction.
@@ -66,6 +72,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
         
         self.registers.flags.set_z_flag_from_u8(self.registers.a);
         self.registers.flags.set_h_flag(false); // H flag always cleared after DAA
+        self.increment_one_cycle();
     }
 
     /// Inverts all bits in register A. N and H flags are set.
@@ -73,6 +80,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.a = !self.registers.a;
         self.registers.flags.n = true;
         self.registers.flags.h = true;
+        self.increment_one_cycle();
     }
     
     /// Sets the carry flag CY. H and N flags are reset.
@@ -80,5 +88,14 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_c_flag(true);
         self.registers.flags.h = false;
         self.registers.flags.n = false;
+        self.increment_one_cycle();
+    }
+
+    fn halt(&mut self) {
+        self.increment_one_cycle();
+    }
+    
+    fn stop(&mut self) {
+        self.increment_one_cycle();
     }
 }

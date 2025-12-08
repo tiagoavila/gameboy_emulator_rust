@@ -29,6 +29,7 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.n = false;
         self.registers.flags.set_c_flag(carry);
         self.registers.flags.set_h_flag(h_flag);
+        self.increment_two_cycles();
     }
 
     /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in SP.
@@ -74,6 +75,7 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(h_flag);
 
         self.registers.increment_pc();
+        self.increment_cycles(4);
     } 
 
     /// Increments the contents of a 16-bit register by 1. The 16-bit register can be BC, DE, HL or SP.
@@ -96,6 +98,8 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
             0b11 => self.registers.sp = result,
             _ => (),
         }
+
+        self.increment_two_cycles();
     }
 
     /// Decrements the contents of a 16-bit register by 1. The 16-bit register can be BC, DE, HL or SP.
@@ -118,5 +122,6 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
             0b11 => self.registers.sp = result,
             _ => (),
         }
+        self.increment_two_cycles();
     }
 }

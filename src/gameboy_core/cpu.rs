@@ -356,10 +356,6 @@ impl Cpu {
         (most_significant_byte << 8) | lowest_significant_byte
     }
 
-    fn halt(&self) {
-        todo!("Implement HALT instruction")
-    }
-
     /// Get the destination register from the opcode.
     /// The destination register is specified by bits 3 to 5 of the opcode.
     pub(crate) fn get_destination_register(opcode: u8) -> u8 {
@@ -440,5 +436,17 @@ impl Cpu {
     /// Set the IME (Interrupt Master Enable) flag
     pub(crate) fn set_ime(&mut self, value: bool) {
         self.ime = value;
+    }
+    
+    pub(crate) fn increment_one_cycle(&mut self) {
+        self.increment_cycles(1);
+    }
+
+    pub(crate) fn increment_two_cycles(&mut self) {
+        self.increment_cycles(2);
+    }
+
+    pub(crate) fn increment_cycles(&mut self, value: u8) {
+        self.cycles += value as u64;
     }
 }

@@ -5,6 +5,7 @@ pub mod cpu_utils;
 pub mod ppu;
 pub mod ppu_components;
 pub mod cpu_instructions;
+pub mod registers_contants;
 
 #[cfg(test)]
 mod tests;

@@ -32,6 +32,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let imm8 = self.get_imm8();
         self.registers.set_8bit_register_value(destination, imm8);
         self.registers.increment_pc();
+        self.increment_two_cycles();
     }
 
     fn ld_r8_r8(&mut self, opcode: u8) {
@@ -44,6 +45,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
 
         let value = self.registers.get_8bit_register_value(source);
         self.registers.set_8bit_register_value(destination, value);
+        self.increment_one_cycle();
     }
 
     /// Load the contents of register HL into 8-bit register.
@@ -51,6 +53,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let destination = Cpu::get_destination_register(opcode);
         let value = self.get_memory_value_at_hl();
         self.registers.set_8bit_register_value(destination, value);
+        self.increment_two_cycles();
     }
 
     /// Stores the contents of register r in memory specified by register pair HL.
@@ -59,6 +62,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let value = self.registers.get_8bit_register_value(source);
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, value);
+        self.increment_two_cycles();
     }
 
     /// Loads 8-bit immediate data n into memory specified by register pair HL.
@@ -67,6 +71,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, imm8);
         self.registers.increment_pc();
+        self.increment_cycles(3);
     }
 
     /// Loads the contents specified by the contents of register pair BC into register A.
@@ -74,6 +79,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let bc = self.registers.get_bc();
         let value = self.memory_bus.read_byte(bc);
         self.registers.a = value;
+        self.increment_two_cycles();
     }
 
     /// Loads the contents specified by the contents of register pair DE into register A.
@@ -81,6 +87,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let de = self.registers.get_de();
         let value = self.memory_bus.read_byte(de);
         self.registers.a = value;
+        self.increment_two_cycles();
     }
 
     /// Loads into register A the contents of the internal RAM, port register, or mode register at the address in
@@ -90,6 +97,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let ram_address = START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register_value;
         let value = self.memory_bus.read_byte(ram_address);
         self.registers.a = value;
+        self.increment_two_cycles();
     }
 
     /// Loads the contents of register A in the internal RAM, port register, or mode register at the address in the
@@ -98,6 +106,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let c_register_value = self.registers.c as u16;
         let ram_address = START_ADDRESS_FOR_LOAD_INSTRUCTIONS + c_register_value;
         self.memory_bus.write_byte(ram_address, self.registers.a);
+        self.increment_two_cycles();
     }
 
     /// Loads into register A the contents of the internal RAM, port register, or mode register at the address in the range FF00h-FFFFh
@@ -110,6 +119,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let value = self.memory_bus.read_byte(address_to_read_from);
         self.registers.a = value;
         self.registers.increment_pc();
+        self.increment_cycles(3);
     }
 
     /// Loads the contents of register A to the internal RAM, port register, or mode register at the address in the range FF00h-FFFFh
@@ -122,6 +132,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         self.memory_bus
             .write_byte(address_to_write, self.registers.a);
         self.registers.increment_pc();
+        self.increment_cycles(3);
     }
 
     /// Loads into register A the contents of the internal RAM or register specified by 16-bit immediate operand nn.
@@ -130,6 +141,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let value = self.memory_bus.read_byte(imm16);
         self.registers.a = value;
         self.registers.increment_pc_twice();
+        self.increment_cycles(4);
     }
 
     /// Loads the contents of register A to the internal RAM or register specified by 16-bit immediate operand nn.
@@ -137,6 +149,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let imm16 = self.get_imm16();
         self.memory_bus.write_byte(imm16, self.registers.a);
         self.registers.increment_pc_twice();
+        self.increment_cycles(4);
     }
 
     /// Loads in register A the contents of memory specified by the contents of register pair HL and simultaneously increments the contents of HL.
@@ -144,6 +157,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let value = self.get_memory_value_at_hl();
         self.registers.a = value;
         self.registers.increment_hl();
+        self.increment_two_cycles();
     }
 
     /// Loads in register A the contents of memory specified by the contents of register pair HL and simultaneously decrements the contents of HL.
@@ -153,6 +167,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let value = self.get_memory_value_at_hl();
         self.registers.a = value;
         self.registers.decrement_hl();
+        self.increment_two_cycles();
     }
 
     /// Stores the contents of register A in the memory specified by register pair BC.
@@ -161,6 +176,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
     fn ld_bc_a(&mut self) {
         let bc = self.registers.get_bc();
         self.memory_bus.write_byte(bc, self.registers.a);
+        self.increment_two_cycles();
     }
 
     /// Stores the contents of register A in the memory specified by register pair DE.
@@ -169,6 +185,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
     fn ld_de_a(&mut self) {
         let de = self.registers.get_de();
         self.memory_bus.write_byte(de, self.registers.a);
+        self.increment_two_cycles();
     }
 
     /// Stores the contents of register A in the memory specified by register pair HL and simultaneously increments the contents of HL.
@@ -178,6 +195,7 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, self.registers.a);
         self.registers.increment_hl();
+        self.increment_two_cycles();
     }
 
     /// Stores the contents of register A in the memory specified by register pair HL and simultaneously decrements the contents of HL.
@@ -187,5 +205,6 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let hl = self.registers.get_hl();
         self.memory_bus.write_byte(hl, self.registers.a);
         self.registers.decrement_hl();
+        self.increment_two_cycles();
     }
 }

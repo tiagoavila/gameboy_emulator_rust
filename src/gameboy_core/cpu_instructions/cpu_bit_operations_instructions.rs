@@ -32,6 +32,7 @@ impl CpuBitOperationsInstructions for Cpu {
         self.registers.flags.set_z_flag_from_u8(bit);
         self.registers.flags.set_h_flag(true);
         self.registers.flags.n = false;
+        self.increment_two_cycles();
     }
     
     /// Test bit b in memory location pointed by HL register. Set Z flag if the bit is 0.
@@ -55,6 +56,7 @@ impl CpuBitOperationsInstructions for Cpu {
         self.registers.flags.set_z_flag_from_u8(bit);
         self.registers.flags.set_h_flag(true);
         self.registers.flags.n = false;
+        self.increment_cycles(3);
     }
 
     /// Sets to 1 the specified bit in specified 8-bit register.
@@ -76,6 +78,7 @@ impl CpuBitOperationsInstructions for Cpu {
         };
         
         self.registers.set_8bit_register_value(register, value);
+        self.increment_two_cycles();
     }
     
     /// Sets to 1 the specified bit in memory location pointed by HL register.
@@ -97,6 +100,7 @@ impl CpuBitOperationsInstructions for Cpu {
         };
         
         self.memory_bus.write_byte(hl, value);
+        self.increment_cycles(4);
     }
 
     /// Resets to 0 the specified bit in specified 8-bit register.
@@ -118,6 +122,7 @@ impl CpuBitOperationsInstructions for Cpu {
         };
         
         self.registers.set_8bit_register_value(register, value);
+        self.increment_two_cycles();
     }
     
     /// Sets to 1 the specified bit in memory location pointed by HL register.
@@ -139,5 +144,6 @@ impl CpuBitOperationsInstructions for Cpu {
         };
         
         self.memory_bus.write_byte(hl, value);
+        self.increment_cycles(4);
     }
 }
