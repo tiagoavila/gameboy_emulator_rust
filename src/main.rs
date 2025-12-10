@@ -111,7 +111,7 @@ fn run_gameboy(cpu: &mut gameboy_core::cpu::Cpu) {
             cpu.tick();
         }
 
-        cpu.ppu.update_screen(&cpu.memory_bus);
+        cpu.ppu.update_screen_buffer(&cpu.memory_bus);
         render_display(cpu, &mut window, &mut buffer);
     }
 }

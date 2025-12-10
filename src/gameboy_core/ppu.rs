@@ -15,7 +15,7 @@ impl Ppu {
         }
     }
     
-    pub fn update_screen(&mut self, memory_bus: &cpu_components::MemoryBus) {
+    pub fn update_screen_buffer(&mut self, memory_bus: &cpu_components::MemoryBus) {
         self.screen = self.get_screen_buffer(memory_bus);
     }
 

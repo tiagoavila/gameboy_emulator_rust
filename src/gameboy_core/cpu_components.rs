@@ -2,7 +2,7 @@ use crate::gameboy_core::{
     constants::{
         BGP, INITIAL_PC, LCDC, LY, MEMORY_SIZE, SCX, SCY
     },
-    ppu_components::LcdcRegister,
+    ppu_components::LcdcRegister, registers_contants,
 };
 
 pub struct CpuRegisters {
@@ -345,5 +345,20 @@ impl MemoryBus {
 
     pub(crate) fn set_bgp_register(&mut self, value: u8) {
         self.write_byte(BGP, value);
+    }
+    
+    /// Get the TMA register value, that is located at address 0xFF06
+    pub(crate) fn get_tma_register(&self) -> u8 {
+        self.read_byte(registers_contants::TMA)
+    }
+    
+    /// Get the TAC register value, that is located at address 0xFF07
+    pub(crate) fn get_tac_register(&self) -> u8 {
+        self.read_byte(registers_contants::TAC)
+    }
+    
+    /// Get the TIMA register value, that is located at address 0xFF05
+    pub(crate) fn get_tima_register(&self) -> u8 {
+        self.read_byte(registers_contants::TIMA)
     }
 }

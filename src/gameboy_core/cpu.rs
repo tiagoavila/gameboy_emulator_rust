@@ -1,5 +1,5 @@
 use crate::gameboy_core::{
-    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, ppu::Ppu
+    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, ppu::Ppu, timer::Timer
 };
 
 pub struct Cpu {
@@ -14,6 +14,7 @@ pub struct Cpu {
     pub di_instruction_pending: bool,
     pub(crate) ei_instruction_pending: bool,
     pub executed_instructions_count: u64,
+    pub timer: Timer
 }
 
 impl Cpu {
@@ -28,6 +29,7 @@ impl Cpu {
             di_instruction_pending: false,
             ei_instruction_pending: false,
             executed_instructions_count: 0,
+            timer: Timer::new()
         };
         cpu.initialize_memory_registers();
 
@@ -473,5 +475,14 @@ impl Cpu {
 
     fn increment_cycles(&mut self, value: u8) {
         self.clock_cycles += value as u64;
+    }
+
+    /// Calls the PPU to update the screen buffer
+    pub fn update_screen(&mut self) {
+        self.ppu.update_screen_buffer(&self.memory_bus);
+    }
+    
+    pub fn update_timers(&mut self, cycles_before: u64) {
+        self.timer.update(cycles_before, self.clock_cycles, &mut self.memory_bus);
     }
 }
