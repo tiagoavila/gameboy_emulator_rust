@@ -1,6 +1,8 @@
 use crate::gameboy_core::cpu_components::MemoryBus;
 
 pub struct Timer {
+    /// TODO: remove the div, tima, tma, tac fields since they are already in memory bus
+
     /// Divider Register (DIV) - increments at a rate of 16384 Hz.
     /// Therefore, it increments every 256 CPU cycles, because the CPU runs at 4.194304 MHz.
     /// The math is 4,194,304 Hz / 16,384 Hz = 256 cycles.
@@ -38,18 +40,20 @@ impl Timer {
     /// Returns whether an interrupt was requested due to TIMA overflow.
     pub fn update(&mut self, cycles_before: u64, cycles_after: u64, memory: &mut MemoryBus,) -> InterruptRequested {
         let cycles_of_last_instruction: u8 = (cycles_after - cycles_before) as u8;
-        self.update_div(cycles_of_last_instruction);
+        self.update_div(cycles_of_last_instruction, memory);
         self.update_tima(cycles_of_last_instruction, memory)
     }
 
     /// Update the DIV register based on the number of cycles executed since the last instruction.
     /// If total cycles exceed 256, increment DIV and reset the cycle counter.
-    fn update_div(&mut self, cycles_of_last_instruction: u8) {
+    fn update_div(&mut self, cycles_of_last_instruction: u8, memory: &mut MemoryBus) {
         let total_cycles = self.cycles_executed_div + cycles_of_last_instruction as u16;
+
 
         if total_cycles >= 256 {
             self.div = self.div.wrapping_add(1);
             self.cycles_executed_div = total_cycles - 256;
+            memory.write_byte(0xFF04, self.div); // Update DIV register in memory
         } else {
             self.cycles_executed_div = total_cycles;
         }
@@ -80,7 +84,11 @@ impl Timer {
             
             if tima_overflowed {
                 self.tima = self.tma;
+                memory.write_byte(0xFF05, self.tima); // Update TIMA register in memory
                 return InterruptRequested::Yes;
+            } else {
+                self.tima = self.tima.wrapping_add(1);
+                memory.write_byte(0xFF05, self.tima); // Update TIMA register in memory
             }
         } else {
             self.cycles_executed_tima = total_cycles;
