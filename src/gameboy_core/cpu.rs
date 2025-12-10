@@ -7,7 +7,9 @@ pub struct Cpu {
     pub memory_bus: MemoryBus,
     pub is_debug_mode: bool,
     pub ppu: Ppu,
-    pub cycles: u64,
+    /// Total number of clock cycles since the CPU started. This value is related to the Master Clock (M) cycles. 
+    /// Which has a frequency of 4,194,304 Hz.
+    pub clock_cycles: u64,
     pub ime: bool,
     pub di_instruction_pending: bool,
     pub(crate) ei_instruction_pending: bool,
@@ -21,7 +23,7 @@ impl Cpu {
             memory_bus: MemoryBus::new(),
             is_debug_mode: false,
             ppu: Ppu::new(),
-            cycles: 0,
+            clock_cycles: 0,
             ime: false,
             di_instruction_pending: false,
             ei_instruction_pending: false,
@@ -90,7 +92,8 @@ impl Cpu {
     pub fn execute(&mut self, opcode: u8) {
         match opcode {
             0x00 | 0xE3 | 0xED => self.nop(), // NOP
-            0b01110110 => self.halt(),        // HALT
+            0x10 => self.stop(),       // STOP
+            0x76 => self.halt(),        // HALT
 
             // 8-Bit Transfer and Input/Output Instructions
             v if (v & 0b11000111) == 0b01000110 && Cpu::destination_is_8bit_register(opcode) => {
@@ -438,15 +441,37 @@ impl Cpu {
         self.ime = value;
     }
     
-    pub(crate) fn increment_one_cycle(&mut self) {
-        self.increment_cycles(1);
+    /// Increment clock cycles by 4
+    pub(crate) fn increment_4_clock_cycles(&mut self) {
+        self.increment_cycles(4);
     }
 
-    pub(crate) fn increment_two_cycles(&mut self) {
-        self.increment_cycles(2);
+    /// Increment clock cycles by 8
+    pub(crate) fn increment_8_clock_cycles(&mut self) {
+        self.increment_cycles(8);
+    }
+    
+    /// Increment clock cycles by 12
+    pub(crate) fn increment_12_clock_cycles(&mut self) {
+        self.increment_cycles(12);
     }
 
-    pub(crate) fn increment_cycles(&mut self, value: u8) {
-        self.cycles += value as u64;
+    /// Increment clock cycles by 16
+    pub(crate) fn increment_16_clock_cycles(&mut self) {
+        self.increment_cycles(16);
+    }
+
+    /// Increment clock cycles by 20
+    pub(crate) fn increment_20_clock_cycles(&mut self) {
+        self.increment_cycles(20);
+    }
+
+    /// Increment clock cycles by 24
+    pub(crate) fn increment_24_clock_cycles(&mut self) {
+        self.increment_cycles(24);
+    }
+
+    fn increment_cycles(&mut self, value: u8) {
+        self.clock_cycles += value as u64;
     }
 }

@@ -137,30 +137,30 @@ mod tests {
     fn test_ld_imm16_a() {
         let mut cpu = Cpu::new();
         
-        // Test case 1: LD (FF44h), A ; (LY) ← A
+        // Test case 1: LD (8001h), A ; (8001h) ← A
         cpu.registers.a = 0x42;
-        // Place address FF44h at PC (little-endian: lower byte first)
-        cpu.memory_bus.write_byte(cpu.registers.pc, 0x44);
-        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0xFF);
+        // Place address 8001h at PC (little-endian: lower byte first)
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x01);
+        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0x80);
 
-        // Test LD (FF44h), A
+        // Test LD (8001h), A
         let opcode = 0b11101010; // LD (nn), A
         cpu.execute(opcode);
         
-        // Verify the value was written to LY register location correctly
-        assert_eq!(cpu.memory_bus.read_byte(0xFF44), 0x42, "Memory at 0xFF44 (LY) should contain A's value");
+        // Verify the value was written to memory location correctly
+        assert_eq!(cpu.memory_bus.read_byte(0x8001), 0x42, "Memory at 0x8001 should contain A's value");
         
-        // Test case 2: LD (8000h), A ; (8000h) ← A
+        // Test case 2: LD (8002h), A ; (8002h) ← A
         cpu.registers.a = 0x67;
-        // Place address 8000h at PC (little-endian: lower byte first)
-        cpu.memory_bus.write_byte(cpu.registers.pc, 0x00);
+        // Place address 8002h at PC (little-endian: lower byte first)
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x02);
         cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0x80);
 
-        // Test LD (8000h), A
+        // Test LD (8002h), A
         cpu.execute(opcode);
         
-        // Verify the value was written to memory correctly
-        assert_eq!(cpu.memory_bus.read_byte(0x8000), 0x67, "Memory at 0x8000 should contain A's value");
+        // Verify the value was written to memory location correctly
+        assert_eq!(cpu.memory_bus.read_byte(0x8002), 0x67, "Memory at 0x8002 should contain A's value");
         
         // Verify register A remains unchanged after both operations
         assert_eq!(cpu.registers.a, 0x67, "A should remain unchanged");
@@ -170,19 +170,19 @@ mod tests {
     fn test_ld_a_imm16() {
         let mut cpu = Cpu::new();
         
-        // Test case 1: LD A, (FF44h) ; A ← (LY)
-        // Write test value to LY register location
-        cpu.memory_bus.write_byte(0xFF44, 0x42);
-        // Place address FF44h at PC (little-endian: lower byte first)
-        cpu.memory_bus.write_byte(cpu.registers.pc, 0x44);
-        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0xFF);
+        // Test case 1: LD A, (8003h) ; A ← (8003h)
+        // Write test value to memory
+        cpu.memory_bus.write_byte(0x8003, 0x42);
+        // Place address 8003h at PC (little-endian: lower byte first)
+        cpu.memory_bus.write_byte(cpu.registers.pc, 0x03);
+        cpu.memory_bus.write_byte(cpu.registers.pc + 1, 0x80);
 
-        // Test LD A, (FF44h)
+        // Test LD A, (8003h)
         let opcode = 0b11111010; // LD A, (nn)
         cpu.execute(opcode);
         
-        // Verify A contains the value from FF44h
-        assert_eq!(cpu.registers.a, 0x42, "A should contain the value from memory at 0xFF44 (LY)");
+        // Verify A contains the value from memory
+        assert_eq!(cpu.registers.a, 0x42, "A should contain the value from memory at 0x8003");
         
         // Test case 2: LD A, (8000h) ; A ← (8000h)
         // Reset A and write test value to memory
@@ -199,7 +199,7 @@ mod tests {
         assert_eq!(cpu.registers.a, 0x67, "A should contain the value from memory at 0x8000");
         
         // Verify memory contents remain unchanged
-        assert_eq!(cpu.memory_bus.read_byte(0xFF44), 0x42, "Memory content at 0xFF44 should remain unchanged");
+        assert_eq!(cpu.memory_bus.read_byte(0x8003), 0x42, "Memory content at 0x8003 should remain unchanged");
         assert_eq!(cpu.memory_bus.read_byte(0x8000), 0x67, "Memory content at 0x8000 should remain unchanged");
     }
 

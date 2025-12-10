@@ -18,7 +18,7 @@ impl CpuCallAndReturnInstructions for Cpu {
     /// value of SP is 2 larger than before instruction execution.)
     fn ret(&mut self) {
         self.registers.pc = self.pop_value_from_sp();
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 
     /// Pushes the current value of the PC to the memory stack and loads to the PC the 16-bit immediate value.
@@ -26,7 +26,7 @@ impl CpuCallAndReturnInstructions for Cpu {
     fn call_imm16(&mut self) {
         self.push_value_to_sp(self.registers.pc + 2); // +2 to point to the next instruction after call
         self.registers.pc = self.get_imm16();
-        self.increment_cycles(6);
+        self.increment_24_clock_cycles();
     }
 
     /// If condition cc matches the flag, the PC value is pushed onto the stack and the PC is loaded with the 16-bit immediate value.
@@ -40,7 +40,7 @@ impl CpuCallAndReturnInstructions for Cpu {
             self.call_imm16();
         } else {
             self.registers.increment_pc_twice();
-            self.increment_cycles(3);
+            self.increment_12_clock_cycles();
         }
     }
 
@@ -63,16 +63,16 @@ impl CpuCallAndReturnInstructions for Cpu {
             7 => 0x0038,
             _ => 0x0,
         };
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 
     /// If condition cc matches the flag, pops from the memory stack the PC value pushed when the subroutine was called.
     fn ret_cc(&mut self, opcode: u8) {
         if self.check_cc_condition(opcode) {
             self.registers.pc = self.pop_value_from_sp();
-            self.increment_cycles(5);
+            self.increment_20_clock_cycles();
         } else {
-            self.increment_two_cycles();
+            self.increment_8_clock_cycles();
         }
         // If condition is false, PC stays at the next instruction (already incremented by tick)
     }
@@ -81,6 +81,6 @@ impl CpuCallAndReturnInstructions for Cpu {
     fn reti(&mut self) {
         self.registers.pc = self.pop_value_from_sp();
         self.set_ime(true);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 }

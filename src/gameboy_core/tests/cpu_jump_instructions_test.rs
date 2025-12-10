@@ -220,7 +220,7 @@ mod tests {
         cpu.registers.increment_pc();
         // Now PC = 0x201
         
-        let initial_cycles = cpu.cycles;
+        let initial_cycles = cpu.clock_cycles;
         cpu.execute(0x18);
         
         // PC flow: tick increments to 0x201, then jr_imm8 increments again (0x202) and adds offset (+50)
@@ -229,8 +229,8 @@ mod tests {
         
         // Cycles should be incremented by 12
         assert_eq!(
-            cpu.cycles,
-            initial_cycles + 3,
+            cpu.clock_cycles,
+            initial_cycles + 12,
             "Cycles should be incremented by 12"
         );
     }
@@ -249,7 +249,7 @@ mod tests {
         cpu.registers.increment_pc();
         // Now PC = 0x301
         
-        let initial_cycles = cpu.cycles;
+        let initial_cycles = cpu.clock_cycles;
         cpu.execute(0x18);
         
         // PC flow: tick incremented to 0x301, then jr_imm8 increments again (0x302) and subtracts 10
@@ -258,7 +258,7 @@ mod tests {
         
         // Cycles should be incremented by 12
         assert_eq!(
-            cpu.cycles,
+            cpu.clock_cycles,
             initial_cycles + 12,
             "Cycles should be incremented by 12"
         );
@@ -278,7 +278,7 @@ mod tests {
         cpu.registers.increment_pc();
         // Now PC = 0x101
         
-        let initial_cycles = cpu.cycles;
+        let initial_cycles = cpu.clock_cycles;
         cpu.execute(0x18);
         
         // PC flow: tick incremented to 0x101, then jr_imm8 increments again (0x102) and adds 0
@@ -289,7 +289,7 @@ mod tests {
         );
         
         assert_eq!(
-            cpu.cycles,
+            cpu.clock_cycles,
             initial_cycles + 12,
             "Cycles should be incremented by 12"
         );
@@ -392,20 +392,20 @@ mod tests {
         cpu.registers.increment_pc();
         // Now PC = 0x201
         
-        let initial_cycles = cpu.cycles;
+        let initial_cycles = cpu.clock_cycles;
         
         // Execute JR NZ via execute function
         cpu.execute(0x20);
         
         // Since NZ condition is false (z = true), jr_cc_imm8 should not call jr_imm8
-        // So PC should stay at 0x201 (after the increment_pc in execute)
+        // But it still increments PC to skip the offset byte: 0x201 -> 0x202
         assert_eq!(
-            cpu.registers.pc, 0x201,
-            "PC should not change when condition is false"
+            cpu.registers.pc, 0x202,
+            "PC should increment by 1 to skip the offset byte when condition is false"
         );
         
-        // Cycles should not be incremented
-        assert_eq!(cpu.cycles, initial_cycles, "Cycles should not change when condition is false");
+        // Cycles should be incremented by 8 when condition is false
+        assert_eq!(cpu.clock_cycles, initial_cycles + 8, "Cycles should be incremented by 8 when condition is false");
     }
 
     #[test]
@@ -426,7 +426,7 @@ mod tests {
         cpu.registers.increment_pc();
         // Now PC = 0x201
         
-        let initial_cycles = cpu.cycles;
+        let initial_cycles = cpu.clock_cycles;
         
         // Execute JR Z via execute function
         cpu.execute(0x28);
@@ -456,7 +456,7 @@ mod tests {
         
         // Cycles should be incremented by 12 (from jr_imm8)
         assert_eq!(
-            cpu.cycles,
+            cpu.clock_cycles,
             initial_cycles + 12,
             "Cycles should be incremented by 12 when condition is true"
         );

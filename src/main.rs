@@ -10,10 +10,10 @@ pub mod gameboy_core;
 const SCREEN_SCALE: usize = 3;
 
 fn main() {
-    // let rom_file = "tests/blarggs_test_roms/cpu_instrs.gb";
+    let rom_file = "tests/blarggs_test_roms/cpu_instrs.gb";
 
     // TODO: test below roms after fixing instructions they test
-    let rom_file = "tests/blarggs_test_roms/02-interrupts.gb";
+    // let rom_file = "tests/blarggs_test_roms/02-interrupts.gb";
     // let rom_file = "tests/nintendo_logo.gb";
 
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();

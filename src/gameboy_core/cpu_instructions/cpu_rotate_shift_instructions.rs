@@ -32,7 +32,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     fn rlca(&mut self) {
         let rotated_value = self.rotate_left_and_update_flags(self.registers.a, false, false);
         self.registers.a = rotated_value;
-        self.increment_one_cycle();
+        self.increment_4_clock_cycles();
     }
 
     /// Rotate the contents of register A to the left, through the carry (CY) flag. That is, the contents of bit 0 are copied to bit 1,
@@ -42,7 +42,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     fn rla(&mut self) {
         let rotated_value = self.rotate_left_and_update_flags(self.registers.a, true, false);
         self.registers.a = rotated_value;
-        self.increment_one_cycle();
+        self.increment_4_clock_cycles();
     }
 
     /// Rotate the contents of register A to the right. That is, the contents of bit 7 are copied to bit 6,
@@ -52,7 +52,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     fn rrca(&mut self) {
         let rotated_value = self.rotate_right_and_update_flags(self.registers.a, false, false);
         self.registers.a = rotated_value;
-        self.increment_one_cycle();
+        self.increment_4_clock_cycles();
     }
 
     /// Rotate the contents of register A to the right, through the carry (CY) flag.
@@ -62,7 +62,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     fn rra(&mut self) {
         let rotated_value = self.rotate_right_and_update_flags(self.registers.a, true, false);
         self.registers.a = rotated_value;
-        self.increment_one_cycle();
+        self.increment_4_clock_cycles();
     }
 
     /// Rotate the contents of 8-bit register to the left. That is, the contents of bit 0 are copied to bit 1,
@@ -76,7 +76,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let rotated_value = self.rotate_left_and_update_flags(value, false, true);
         self.registers
             .set_8bit_register_value(register, rotated_value);
-        self.increment_two_cycles();
+        self.increment_8_clock_cycles();
     }
 
     /// Rotates the contents of memory specified by register pair HL to the left.
@@ -87,7 +87,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
 
         let rotated_value = self.rotate_left_and_update_flags(value, false, true);
         self.memory_bus.write_byte(hl, rotated_value);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 
     /// Rotate the contents of 8-bit register to the left. That is, the contents of bit 0 are copied to bit 1,
@@ -101,7 +101,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let rotated_value = self.rotate_left_and_update_flags(value, true, true);
         self.registers
             .set_8bit_register_value(register, rotated_value);
-        self.increment_two_cycles();
+        self.increment_8_clock_cycles();
     }
 
     /// Rotates the contents of memory specified by register pair HL to the left.
@@ -112,7 +112,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
 
         let rotated_value = self.rotate_left_and_update_flags(value, true, true);
         self.memory_bus.write_byte(hl, rotated_value);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 
     /// Rotates the contents of a 8-bit register to the right.
@@ -127,7 +127,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let rotated_value = self.rotate_right_and_update_flags(value, false, true);
         self.registers
             .set_8bit_register_value(register, rotated_value);
-        self.increment_two_cycles();
+        self.increment_8_clock_cycles();
     }
 
     /// Rotates the contents of memory specified by register pair HL to the right.
@@ -138,7 +138,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
 
         let rotated_value = self.rotate_right_and_update_flags(value, false, true);
         self.memory_bus.write_byte(hl, rotated_value);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 
     /// Rotates the contents of a 8-bit register to the right.
@@ -153,7 +153,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         let rotated_value = self.rotate_right_and_update_flags(value, true, true);
         self.registers
             .set_8bit_register_value(register, rotated_value);
-        self.increment_two_cycles();
+        self.increment_8_clock_cycles();
     }
 
     /// Rotates the contents of memory specified by register pair HL to the right.
@@ -164,7 +164,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
 
         let rotated_value = self.rotate_right_and_update_flags(value, true, true);
         self.memory_bus.write_byte(hl, rotated_value);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
     
     /// Shifts the contents of a 8-bit register to the left. That is, the contents of bit 0 are copied to bit 1 and the 
@@ -184,7 +184,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.registers.set_8bit_register_value(register, value);
-        self.increment_two_cycles();
+        self.increment_8_clock_cycles();
     }
     
     /// Shifts the contents of memory specified by register pair HL to the left.
@@ -202,7 +202,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 
     /// Shifts the contents of 8-bit register to the right. That is, the contents of bit 7 are copied to bit 6 and the
@@ -225,7 +225,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.registers.set_8bit_register_value(register, value);
-        self.increment_two_cycles();
+        self.increment_8_clock_cycles();
     }
     
     /// Shifts the contents of memory specified by register pair HL to the right.
@@ -245,7 +245,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 
     /// Shifts the contents of operand m to the right. That is, the contents of bit 7 are copied to bit 6 and the 
@@ -266,7 +266,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.registers.set_8bit_register_value(register, value);
-        self.increment_two_cycles();
+        self.increment_8_clock_cycles();
     }
     
     /// Shifts the contents of memory specified by register pair HL to the right.
@@ -284,7 +284,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
     
     /// Shifts the contents of the lower-order and higher-order 4 bits of a 8-bit register.
@@ -301,7 +301,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.n = false;
         self.registers.flags.set_h_flag(false);
         self.registers.flags.set_c_flag(false);
-        self.increment_two_cycles();
+        self.increment_8_clock_cycles();
     }
     
     /// Shifts the contents of the lower-order and higher-order 4 bits of a 8-bit register.
@@ -318,7 +318,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.n = false;
         self.registers.flags.set_h_flag(false);
         self.registers.flags.set_c_flag(false);
-        self.increment_cycles(4);
+        self.increment_16_clock_cycles();
     }
 
     /// Rotates a 8-bit value to the left, updating the CPU flags accordingly.
