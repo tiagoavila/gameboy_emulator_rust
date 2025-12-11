@@ -64,7 +64,6 @@ impl Timer {
         let total_cycles = self.cycles_executed_tima + cycles_of_last_instruction as u16;
 
         if total_cycles >= tima_increment_threshold {
-            let tma = memory.get_tma_register();
             let mut tima = memory.get_tima_register();
 
             self.cycles_executed_tima = total_cycles - tima_increment_threshold;
@@ -72,13 +71,13 @@ impl Timer {
             let (increment_result, tima_overflowed) = tima.overflowing_add(1);
 
             if tima_overflowed {
-                tima = tma;
-                memory.set_tima_register(tima);
+                tima = memory.get_tma_register();
                 memory.update_timer_flag_in_if_register(InterruptType::Timer, true);
             } else {
                 tima = increment_result;
-                memory.set_tima_register(tima);
             }
+
+            memory.set_tima_register(tima);
         } else {
             self.cycles_executed_tima = total_cycles;
         }

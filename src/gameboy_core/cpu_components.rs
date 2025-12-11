@@ -380,6 +380,7 @@ impl MemoryBus {
     }
     
     /// Sets or clears the timer interrupt flag in the IF register.
+    /// The IF register controls which interrupts are being requested.
     pub(crate) fn update_timer_flag_in_if_register(&mut self, interrupt_type: InterruptType, value: bool) {
         let mut if_register = self.read_byte(registers_contants::IF);
         if value {
