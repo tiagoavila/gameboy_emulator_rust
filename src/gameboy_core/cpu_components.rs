@@ -1,8 +1,7 @@
 use crate::gameboy_core::{
     constants::{
         BGP, INITIAL_PC, LCDC, LY, MEMORY_SIZE, SCX, SCY
-    },
-    ppu_components::LcdcRegister, registers_contants,
+    }, interrupts::InterruptType, ppu_components::LcdcRegister, registers_contants
 };
 
 pub struct CpuRegisters {
@@ -346,19 +345,61 @@ impl MemoryBus {
     pub(crate) fn set_bgp_register(&mut self, value: u8) {
         self.write_byte(BGP, value);
     }
+
+    /// Divider Register (DIV) - increments at a rate of 16384 Hz.
+    /// Therefore, it increments every 256 CPU cycles, because the CPU runs at 4.194304 MHz.
+    /// The math is 4,194,304 Hz / 16,384 Hz = 256 cycles.
+    pub(crate) fn get_div_register(&self) -> u8 {
+        self.read_byte(registers_contants::DIV)
+    }
     
     /// Get the TMA register value, that is located at address 0xFF06
+    /// Timer Modulo (TMA) - when TIMA overflows (from 0xFF to 0x00), it is reloaded with the value in TMA.
     pub(crate) fn get_tma_register(&self) -> u8 {
         self.read_byte(registers_contants::TMA)
     }
     
     /// Get the TAC register value, that is located at address 0xFF07
+    /// Timer Control (TAC) - controls the timer's operation, including its speed and whether it is enabled.
     pub(crate) fn get_tac_register(&self) -> u8 {
         self.read_byte(registers_contants::TAC)
     }
     
     /// Get the TIMA register value, that is located at address 0xFF05
+    /// Timer Counter (TIMA) - increments at a rate determined by the TAC register.
     pub(crate) fn get_tima_register(&self) -> u8 {
         self.read_byte(registers_contants::TIMA)
+    }
+    
+    pub(crate) fn set_div_register(&mut self, value: u8) {
+        self.write_byte(registers_contants::DIV, value);
+    }
+
+    pub(crate) fn set_tima_register(&mut self, value: u8) {
+        self.write_byte(registers_contants::TIMA, value);
+    }
+    
+    /// Sets or clears the timer interrupt flag in the IF register.
+    pub(crate) fn update_timer_flag_in_if_register(&mut self, interrupt_type: InterruptType, value: bool) {
+        let mut if_register = self.read_byte(registers_contants::IF);
+        if value {
+            match interrupt_type {
+                InterruptType::VBlank => if_register |= 0b00000001, // Set bit 0 to request V-Blank interrupt
+                InterruptType::LCD => if_register |= 0b00000010, // Set bit 1 to request LCD STAT interrupt
+                InterruptType::Timer => if_register |= 0b00000100, // Set bit 2 to request Timer interrupt
+                InterruptType::Serial => if_register |= 0b00001000, // Set bit 3 to request Serial interrupt
+                InterruptType::Joypad => if_register |= 0b00010000, // Set bit 4 to request Joypad interrupt 
+            }
+        } else {
+            match interrupt_type {
+                InterruptType::VBlank => if_register &= 0b11111110, // Clear bit 0 to clear V-Blank interrupt
+                InterruptType::LCD => if_register &= 0b11111101, // Clear bit 1 to clear LCD STAT interrupt
+                InterruptType::Timer => if_register &= 0b11111011, // Clear bit 2 to clear Timer interrupt
+                InterruptType::Serial => if_register &= 0b11110111, // Clear bit 3 to clear Serial interrupt
+                InterruptType::Joypad => if_register &= 0b11101111, // Clear bit 4 to clear Joypad interrupt
+            }
+        }
+
+        self.write_byte(registers_contants::IF, if_register);
     }
 }

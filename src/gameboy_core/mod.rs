@@ -7,6 +7,7 @@ pub mod ppu_components;
 pub mod cpu_instructions;
 pub mod registers_contants;
 pub mod timer;
+pub mod interrupts;
 
 #[cfg(test)]
 mod tests;

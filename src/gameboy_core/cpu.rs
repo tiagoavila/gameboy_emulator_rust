@@ -1,5 +1,5 @@
 use crate::gameboy_core::{
-    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, ppu::Ppu, timer::Timer
+    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, interrupts::InterruptsHandler, ppu::Ppu, timer::Timer
 };
 
 pub struct Cpu {
@@ -14,7 +14,8 @@ pub struct Cpu {
     pub di_instruction_pending: bool,
     pub(crate) ei_instruction_pending: bool,
     pub executed_instructions_count: u64,
-    pub timer: Timer
+    pub timer: Timer,
+    pub interrupts_handler: InterruptsHandler
 }
 
 impl Cpu {
@@ -23,13 +24,14 @@ impl Cpu {
             registers: CpuRegisters::new(),
             memory_bus: MemoryBus::new(),
             is_debug_mode: false,
-            ppu: Ppu::new(),
             clock_cycles: 0,
             ime: false,
             di_instruction_pending: false,
             ei_instruction_pending: false,
             executed_instructions_count: 0,
-            timer: Timer::new()
+            ppu: Ppu::new(),
+            timer: Timer::new(),
+            interrupts_handler: InterruptsHandler::new(),
         };
         cpu.initialize_memory_registers();
 

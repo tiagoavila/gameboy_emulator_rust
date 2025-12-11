@@ -1,7 +1,7 @@
 /// The IE flag is used to control interrupts.
 pub const IE: u16 = 0xFFFF;
 
-/// The IF flag is used to indicate which interrupts are requested.
+/// The IF flag is used to indicate which interrupts could be requested.
 pub const IF: u16 = 0xFF0F;
 
 /// Divider Register (DIV) 
