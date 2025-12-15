@@ -54,13 +54,13 @@ pub trait InterruptsHandler {
 
     /// Sets the PC to the interrupt handler address based on the interrupt type and increments clock cycles.
     fn do_handle_interrupt(cpu: &mut Cpu, interrupt_type: InterruptType) {
-        match interrupt_type {
-            InterruptType::VBlank => cpu.registers.pc = VBLANK_INTERRUT_HANDLER_ADDRESS,
-            InterruptType::LCD => cpu.registers.pc = LCD_STAT_INTERRUPT_HANDLER_ADDRESS,
-            InterruptType::Timer => cpu.registers.pc = TIMER_INTERRUPT_HANDLER_ADDRESS,
-            InterruptType::Serial => cpu.registers.pc = SERIAL_INTERRUPT_HANDLER_ADDRESS,
-            InterruptType::Joypad => cpu.registers.pc = JOYPAD_INTERRUPT_HANDLER_ADDRESS,
-        }
+        cpu.registers.pc = match interrupt_type {
+            InterruptType::VBlank => VBLANK_INTERRUT_HANDLER_ADDRESS,
+            InterruptType::LCD => LCD_STAT_INTERRUPT_HANDLER_ADDRESS,
+            InterruptType::Timer => TIMER_INTERRUPT_HANDLER_ADDRESS,
+            InterruptType::Serial => SERIAL_INTERRUPT_HANDLER_ADDRESS,
+            InterruptType::Joypad => JOYPAD_INTERRUPT_HANDLER_ADDRESS,
+        };
 
         cpu.increment_20_clock_cycles();
     }
@@ -94,7 +94,7 @@ impl InterruptsHandler for Cpu {
 
         let if_register_flags = Self::get_register_flag_values(if_register);
         let ie_register_flags = Self::get_register_flag_values(ie_register);
-        
+
         // The order of the if statements is important, as it defines the priority of the interrupts.
         // Priority order: VBlank > LCD > Timer > Serial > Joypad
 
@@ -122,11 +122,11 @@ impl InterruptsHandler for Cpu {
             Self::do_before_handling_interrupt(self, InterruptType::Joypad);
             Self::do_handle_interrupt(self, InterruptType::Joypad);
         }
-        
+
         // Setting IME to its previous value is handled by the interrupt handler itself, using the RETI instruction or by calling EI instruction.
-        // Return from an interrupt routine can be performed by either RETI or RET instruction. 
-        // The RETI instruction enables interrupts after doing a return operation. 
-        // If a RET is used as the final instruction in an interrupt routine, interrupts will remain disabled 
+        // Return from an interrupt routine can be performed by either RETI or RET instruction.
+        // The RETI instruction enables interrupts after doing a return operation.
+        // If a RET is used as the final instruction in an interrupt routine, interrupts will remain disabled
         // unless a EI was used in the interrupt routine or is used at a later time.
         // The interrupt will be acknowledged during opcode fetch period of each instruction.
     }
