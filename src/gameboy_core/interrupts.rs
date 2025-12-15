@@ -1,3 +1,13 @@
+use crate::gameboy_core::{
+    constants::{
+        JOYPAD_INTERRUPT_HANDLER_ADDRESS, LCD_STAT_INTERRUPT_HANDLER_ADDRESS,
+        SERIAL_INTERRUPT_HANDLER_ADDRESS, TIMER_INTERRUPT_HANDLER_ADDRESS,
+        VBLANK_INTERRUT_HANDLER_ADDRESS,
+    },
+    cpu::Cpu,
+    registers_contants::{IE, IF},
+};
+
 pub enum InterruptType {
     VBlank,
     LCD,
@@ -6,14 +16,118 @@ pub enum InterruptType {
     Joypad,
 }
 
-pub struct InterruptsHandler {
-
+/// Used to represent both IE and IF registers, since they have the same bit layout.
+pub struct InterruptStatus {
+    VBlank: bool,
+    LCD: bool,
+    Timer: bool,
+    Serial: bool,
+    Joypad: bool,
 }
 
-impl InterruptsHandler {
-    pub fn new() -> Self {
-        InterruptsHandler {
+pub trait InterruptsHandler {
+    /// Checks if any interrupts are requested by checking the IME, IF and IE registers.
+    /// If an interrupt is requested, it handles it by calling the appropriate interrupt handler.
+    fn handle_interrupts(&mut self);
 
+    /// When the IF and IE flags of a specific interrupt are both set, the following steps are performed before handling the interrupt:
+    /// 1. The IME flag is reset to disable further interrupts.
+    /// 2. The corresponding bit in the IF register is reset.
+    /// 3. The program counter (PC) is pushed onto the stack.
+    fn do_before_handling_interrupt(cpu: &mut Cpu, interrupt_type: InterruptType) {
+        cpu.ime = false; // Disable further interrupts
+
+        // Reset the corresponding bit in the IF register
+        let mut if_register = cpu.memory_bus.read_byte(IF);
+        match interrupt_type {
+            InterruptType::VBlank => if_register &= 0b11111110,
+            InterruptType::LCD => if_register &= 0b11111101,
+            InterruptType::Timer => if_register &= 0b11111011,
+            InterruptType::Serial => if_register &= 0b11110111,
+            InterruptType::Joypad => if_register &= 0b11101111,
         }
+        cpu.memory_bus.write_byte(IF, if_register);
+
+        // Push the current PC onto the stack
+        cpu.push_value_to_sp(cpu.registers.pc);
+    }
+
+    /// Sets the PC to the interrupt handler address based on the interrupt type and increments clock cycles.
+    fn do_handle_interrupt(cpu: &mut Cpu, interrupt_type: InterruptType) {
+        match interrupt_type {
+            InterruptType::VBlank => cpu.registers.pc = VBLANK_INTERRUT_HANDLER_ADDRESS,
+            InterruptType::LCD => cpu.registers.pc = LCD_STAT_INTERRUPT_HANDLER_ADDRESS,
+            InterruptType::Timer => cpu.registers.pc = TIMER_INTERRUPT_HANDLER_ADDRESS,
+            InterruptType::Serial => cpu.registers.pc = SERIAL_INTERRUPT_HANDLER_ADDRESS,
+            InterruptType::Joypad => cpu.registers.pc = JOYPAD_INTERRUPT_HANDLER_ADDRESS,
+        }
+
+        cpu.increment_20_clock_cycles();
+    }
+
+    /// Returns a struct indicating which interrupts are enabled.
+    /// This is used by both IE and IF registers because they have the same bit layout.
+    /// * Bit 0 - VBlank Interrupt
+    /// * Bit 1 - LCD Interrupt
+    /// * Bit 2 - Timer Interrupt
+    /// * Bit 3 - Serial Interrupt
+    /// * Bit 4 - Joypad Interrupt
+    fn get_register_flag_values(if_register: u8) -> InterruptStatus {
+        return InterruptStatus {
+            VBlank: 0b00000001 & if_register != 0,
+            LCD: 0b00000010 & if_register != 0,
+            Timer: 0b00000100 & if_register != 0,
+            Serial: 0b00001000 & if_register != 0,
+            Joypad: 0b00010000 & if_register != 0,
+        };
+    }
+}
+
+impl InterruptsHandler for Cpu {
+    fn handle_interrupts(&mut self) {
+        if !self.ime {
+            return;
+        }
+
+        let if_register = self.memory_bus.read_byte(IF);
+        let ie_register = self.memory_bus.read_byte(IE);
+
+        let if_register_flags = Self::get_register_flag_values(if_register);
+        let ie_register_flags = Self::get_register_flag_values(ie_register);
+        
+        // The order of the if statements is important, as it defines the priority of the interrupts.
+        // Priority order: VBlank > LCD > Timer > Serial > Joypad
+
+        if if_register_flags.VBlank && ie_register_flags.VBlank {
+            Self::do_before_handling_interrupt(self, InterruptType::VBlank);
+            Self::do_handle_interrupt(self, InterruptType::VBlank);
+        }
+
+        if if_register_flags.LCD && ie_register_flags.LCD {
+            Self::do_before_handling_interrupt(self, InterruptType::LCD);
+            Self::do_handle_interrupt(self, InterruptType::LCD);
+        }
+
+        if if_register_flags.Timer && ie_register_flags.Timer {
+            Self::do_before_handling_interrupt(self, InterruptType::Timer);
+            Self::do_handle_interrupt(self, InterruptType::Timer);
+        }
+
+        if if_register_flags.Serial && ie_register_flags.Serial {
+            Self::do_before_handling_interrupt(self, InterruptType::Serial);
+            Self::do_handle_interrupt(self, InterruptType::Serial);
+        }
+
+        if if_register_flags.Joypad && ie_register_flags.Joypad {
+            Self::do_before_handling_interrupt(self, InterruptType::Joypad);
+            Self::do_handle_interrupt(self, InterruptType::Joypad);
+        }
+        
+        // Setting IME to its previous value is handled by the interrupt handler itself, using the RETI instruction or by calling EI instruction.
+        // Return from an interrupt routine can be performed by either RETI or RET instruction. 
+        // The RETI instruction enables interrupts after doing a return operation. 
+        // If a RET is used as the final instruction in an interrupt routine, interrupts will remain disabled 
+        // unless a EI was used in the interrupt routine or is used at a later time.
+        // The interrupt will be acknowledged during opcode fetch period of each instruction.
     }
 }

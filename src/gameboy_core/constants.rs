@@ -80,3 +80,11 @@ pub const SCX: u16 = 0xFF43;
 /// LY indicates the current horizontal line, which might be about to be drawn, being drawn, or just been drawn.
 /// LY can hold any value from 0 to 153, with values from 144 to 153 indicating the VBlank period. 
 pub const LY: u16 = 0xFF44;
+
+
+/// The address of the interrupt handlers.
+pub const VBLANK_INTERRUT_HANDLER_ADDRESS: u16 = 0x40;
+pub const LCD_STAT_INTERRUPT_HANDLER_ADDRESS: u16 = 0x48;
+pub const TIMER_INTERRUPT_HANDLER_ADDRESS: u16 = 0x50;
+pub const SERIAL_INTERRUPT_HANDLER_ADDRESS: u16 = 0x58;
+pub const JOYPAD_INTERRUPT_HANDLER_ADDRESS: u16 = 0x60;

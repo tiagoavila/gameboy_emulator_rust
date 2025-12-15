@@ -15,7 +15,6 @@ pub struct Cpu {
     pub(crate) ei_instruction_pending: bool,
     pub executed_instructions_count: u64,
     pub timer: Timer,
-    pub interrupts_handler: InterruptsHandler
 }
 
 impl Cpu {
@@ -31,7 +30,6 @@ impl Cpu {
             executed_instructions_count: 0,
             ppu: Ppu::new(),
             timer: Timer::new(),
-            interrupts_handler: InterruptsHandler::new(),
         };
         cpu.initialize_memory_registers();
 
@@ -69,6 +67,8 @@ impl Cpu {
 
         self.enable_ime_if_ei_instruction_pending(opcode);
         self.disable_ime_if_di_instruction_pending(opcode);
+
+        self.handle_interrupts();
     }
 
     fn fetch_opcode(&mut self) -> u8 {
@@ -487,4 +487,5 @@ impl Cpu {
     pub fn update_timers(&mut self, cycles_before: u64) {
         self.timer.update(cycles_before, self.clock_cycles, &mut self.memory_bus);
     }
+    
 }
