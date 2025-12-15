@@ -18,11 +18,11 @@ pub enum InterruptType {
 
 /// Used to represent both IE and IF registers, since they have the same bit layout.
 pub struct InterruptStatus {
-    VBlank: bool,
-    LCD: bool,
-    Timer: bool,
-    Serial: bool,
-    Joypad: bool,
+    vblank: bool,
+    lcd: bool,
+    timer: bool,
+    serial: bool,
+    joypad: bool,
 }
 
 pub trait InterruptsHandler {
@@ -74,11 +74,11 @@ pub trait InterruptsHandler {
     /// * Bit 4 - Joypad Interrupt
     fn get_register_flag_values(if_register: u8) -> InterruptStatus {
         return InterruptStatus {
-            VBlank: 0b00000001 & if_register != 0,
-            LCD: 0b00000010 & if_register != 0,
-            Timer: 0b00000100 & if_register != 0,
-            Serial: 0b00001000 & if_register != 0,
-            Joypad: 0b00010000 & if_register != 0,
+            vblank: 0b00000001 & if_register != 0,
+            lcd: 0b00000010 & if_register != 0,
+            timer: 0b00000100 & if_register != 0,
+            serial: 0b00001000 & if_register != 0,
+            joypad: 0b00010000 & if_register != 0,
         };
     }
 }
@@ -98,27 +98,27 @@ impl InterruptsHandler for Cpu {
         // The order of the if statements is important, as it defines the priority of the interrupts.
         // Priority order: VBlank > LCD > Timer > Serial > Joypad
 
-        if if_register_flags.VBlank && ie_register_flags.VBlank {
+        if if_register_flags.vblank && ie_register_flags.vblank {
             Self::do_before_handling_interrupt(self, InterruptType::VBlank);
             Self::do_handle_interrupt(self, InterruptType::VBlank);
         }
 
-        if if_register_flags.LCD && ie_register_flags.LCD {
+        if if_register_flags.lcd && ie_register_flags.lcd {
             Self::do_before_handling_interrupt(self, InterruptType::LCD);
             Self::do_handle_interrupt(self, InterruptType::LCD);
         }
 
-        if if_register_flags.Timer && ie_register_flags.Timer {
+        if if_register_flags.timer && ie_register_flags.timer {
             Self::do_before_handling_interrupt(self, InterruptType::Timer);
             Self::do_handle_interrupt(self, InterruptType::Timer);
         }
 
-        if if_register_flags.Serial && ie_register_flags.Serial {
+        if if_register_flags.serial && ie_register_flags.serial {
             Self::do_before_handling_interrupt(self, InterruptType::Serial);
             Self::do_handle_interrupt(self, InterruptType::Serial);
         }
 
-        if if_register_flags.Joypad && ie_register_flags.Joypad {
+        if if_register_flags.joypad && ie_register_flags.joypad {
             Self::do_before_handling_interrupt(self, InterruptType::Joypad);
             Self::do_handle_interrupt(self, InterruptType::Joypad);
         }
