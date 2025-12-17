@@ -22,7 +22,12 @@ pub fn read_rom(file_path: &str) -> io::Result<Vec<u8>> {
     Ok(buffer)
 }
 
-pub fn log_state(cpu: &Cpu, opcode: u8) -> io::Result<()> {
+pub(crate) fn log(cpu: &mut Cpu, opcode: u8) -> io::Result<()> {
+    log_state(cpu, opcode).unwrap();
+    log_to_dr_gameboy(cpu, cpu.registers.pc)
+}
+
+pub(crate) fn log_state(cpu: &Cpu, opcode: u8) -> io::Result<()> {
     if cpu.is_debug_mode {
         let file_path = "instructions_log.txt";
         

@@ -92,6 +92,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     }
 
     fn halt(&mut self) {
+        self.is_halt_mode = true;
         self.increment_4_clock_cycles();
     }
     

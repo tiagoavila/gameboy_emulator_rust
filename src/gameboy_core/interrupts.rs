@@ -16,6 +16,8 @@ pub enum InterruptType {
     Joypad,
 }
 
+pub struct InterruptsHandler;
+
 /// Used to represent both IE and IF registers, since they have the same bit layout.
 pub struct InterruptStatus {
     vblank: bool,
@@ -25,10 +27,59 @@ pub struct InterruptStatus {
     joypad: bool,
 }
 
-pub trait InterruptsHandler {
+impl InterruptsHandler {
     /// Checks if any interrupts are requested by checking the IME, IF and IE registers.
     /// If an interrupt is requested, it handles it by calling the appropriate interrupt handler.
-    fn handle_interrupts(&mut self);
+    pub fn handle(cpu: &mut Cpu) {
+        if !cpu.ime {
+            if cpu.is_halt_mode {
+                Self::check_pending_interrupts_to_exit_halt_mode(cpu);
+            }
+
+            return;
+        }
+
+        let if_register = cpu.memory_bus.read_byte(IF);
+        let ie_register = cpu.memory_bus.read_byte(IE);
+
+        let if_register_flags = Self::get_register_flag_values(if_register);
+        let ie_register_flags = Self::get_register_flag_values(ie_register);
+
+        // The order of the if statements is important, as it defines the priority of the interrupts.
+        // Priority order: VBlank > LCD > Timer > Serial > Joypad
+
+        if if_register_flags.vblank && ie_register_flags.vblank {
+            Self::do_before_handling_interrupt(cpu, InterruptType::VBlank);
+            Self::do_handle_interrupt(cpu, InterruptType::VBlank);
+        }
+
+        if if_register_flags.lcd && ie_register_flags.lcd {
+            Self::do_before_handling_interrupt(cpu, InterruptType::LCD);
+            Self::do_handle_interrupt(cpu, InterruptType::LCD);
+        }
+
+        if if_register_flags.timer && ie_register_flags.timer {
+            Self::do_before_handling_interrupt(cpu, InterruptType::Timer);
+            Self::do_handle_interrupt(cpu, InterruptType::Timer);
+        }
+
+        if if_register_flags.serial && ie_register_flags.serial {
+            Self::do_before_handling_interrupt(cpu, InterruptType::Serial);
+            Self::do_handle_interrupt(cpu, InterruptType::Serial);
+        }
+
+        if if_register_flags.joypad && ie_register_flags.joypad {
+            Self::do_before_handling_interrupt(cpu, InterruptType::Joypad);
+            Self::do_handle_interrupt(cpu, InterruptType::Joypad);
+        }
+
+        // Setting IME to its previous value is handled by the interrupt handler itself, using the RETI instruction or by calling EI instruction.
+        // Return from an interrupt routine can be performed by either RETI or RET instruction.
+        // The RETI instruction enables interrupts after doing a return operation.
+        // If a RET is used as the final instruction in an interrupt routine, interrupts will remain disabled
+        // unless a EI was used in the interrupt routine or is used at a later time.
+        // The interrupt will be acknowledged during opcode fetch period of each instruction.
+    }
 
     /// When the IF and IE flags of a specific interrupt are both set, the following steps are performed before handling the interrupt:
     /// 1. The IME flag is reset to disable further interrupts.
@@ -63,6 +114,7 @@ pub trait InterruptsHandler {
         };
 
         cpu.increment_20_clock_cycles();
+        cpu.is_halt_mode = false;
     }
 
     /// Returns a struct indicating which interrupts are enabled.
@@ -81,53 +133,14 @@ pub trait InterruptsHandler {
             joypad: 0b00010000 & if_register != 0,
         };
     }
-}
+    
+    /// If any interrupts are pending (IE and IF have matching bits set), exit HALT mode even if IME is disabled.
+    fn check_pending_interrupts_to_exit_halt_mode(cpu: &mut Cpu) {
+        let if_register = cpu.memory_bus.read_byte(IF);
+        let ie_register = cpu.memory_bus.read_byte(IE);
 
-impl InterruptsHandler for Cpu {
-    fn handle_interrupts(&mut self) {
-        if !self.ime {
-            return;
+        if if_register != 0 && ie_register != 0 {
+            cpu.is_halt_mode = false;
         }
-
-        let if_register = self.memory_bus.read_byte(IF);
-        let ie_register = self.memory_bus.read_byte(IE);
-
-        let if_register_flags = Self::get_register_flag_values(if_register);
-        let ie_register_flags = Self::get_register_flag_values(ie_register);
-
-        // The order of the if statements is important, as it defines the priority of the interrupts.
-        // Priority order: VBlank > LCD > Timer > Serial > Joypad
-
-        if if_register_flags.vblank && ie_register_flags.vblank {
-            Self::do_before_handling_interrupt(self, InterruptType::VBlank);
-            Self::do_handle_interrupt(self, InterruptType::VBlank);
-        }
-
-        if if_register_flags.lcd && ie_register_flags.lcd {
-            Self::do_before_handling_interrupt(self, InterruptType::LCD);
-            Self::do_handle_interrupt(self, InterruptType::LCD);
-        }
-
-        if if_register_flags.timer && ie_register_flags.timer {
-            Self::do_before_handling_interrupt(self, InterruptType::Timer);
-            Self::do_handle_interrupt(self, InterruptType::Timer);
-        }
-
-        if if_register_flags.serial && ie_register_flags.serial {
-            Self::do_before_handling_interrupt(self, InterruptType::Serial);
-            Self::do_handle_interrupt(self, InterruptType::Serial);
-        }
-
-        if if_register_flags.joypad && ie_register_flags.joypad {
-            Self::do_before_handling_interrupt(self, InterruptType::Joypad);
-            Self::do_handle_interrupt(self, InterruptType::Joypad);
-        }
-
-        // Setting IME to its previous value is handled by the interrupt handler itself, using the RETI instruction or by calling EI instruction.
-        // Return from an interrupt routine can be performed by either RETI or RET instruction.
-        // The RETI instruction enables interrupts after doing a return operation.
-        // If a RET is used as the final instruction in an interrupt routine, interrupts will remain disabled
-        // unless a EI was used in the interrupt routine or is used at a later time.
-        // The interrupt will be acknowledged during opcode fetch period of each instruction.
     }
 }

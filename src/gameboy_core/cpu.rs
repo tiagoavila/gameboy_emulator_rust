@@ -15,6 +15,8 @@ pub struct Cpu {
     pub(crate) ei_instruction_pending: bool,
     pub executed_instructions_count: u64,
     pub timer: Timer,
+    pub interrupts_handler: InterruptsHandler,
+    pub is_halt_mode: bool,
 }
 
 impl Cpu {
@@ -30,6 +32,8 @@ impl Cpu {
             executed_instructions_count: 0,
             ppu: Ppu::new(),
             timer: Timer::new(),
+            interrupts_handler: InterruptsHandler{},
+            is_halt_mode: false
         };
         cpu.initialize_memory_registers();
 
@@ -58,15 +62,19 @@ impl Cpu {
         self.executed_instructions_count += 1;
 
         let opcode = self.fetch_opcode();
+        let cycles_before = self.clock_cycles;
 
-        cpu_utils::log_state(self, opcode).unwrap();
-        cpu_utils::log_to_dr_gameboy(&self, self.registers.pc).unwrap();
+        cpu_utils::log(self, opcode).unwrap();
 
-        self.registers.increment_pc();
-        self.execute(opcode);
+        if !self.is_halt_mode {
+            self.registers.increment_pc();
+            self.execute(opcode);
+        }
 
         self.enable_ime_if_ei_instruction_pending(opcode);
         self.disable_ime_if_di_instruction_pending(opcode);
+        
+        self.update_timers(cycles_before);
 
         self.handle_interrupts();
     }
@@ -484,8 +492,13 @@ impl Cpu {
         self.ppu.update_screen_buffer(&self.memory_bus);
     }
     
+    /// Update the timers based on the number of clock cycles elapsed
     pub fn update_timers(&mut self, cycles_before: u64) {
         self.timer.update(cycles_before, self.clock_cycles, &mut self.memory_bus);
     }
     
+    /// Handle interrupts if any are requested
+    pub fn handle_interrupts(&mut self) {
+        InterruptsHandler::handle(self);
+    }
 }
