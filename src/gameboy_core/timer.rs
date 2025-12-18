@@ -1,5 +1,3 @@
-use std::mem;
-
 use crate::gameboy_core::{cpu_components::MemoryBus, interrupts::InterruptType};
 
 pub struct Timer {
@@ -7,6 +5,7 @@ pub struct Timer {
     pub cycles_executed_div: u16,
     /// Number of cycles executed since last increment for the TIMA register
     pub cycles_executed_tima: u16,
+    pub tima_overflowed: bool,
 }
 
 pub enum InterruptRequested {
@@ -19,6 +18,7 @@ impl Timer {
         Self {
             cycles_executed_div: 0,
             cycles_executed_tima: 0,
+            tima_overflowed: false,
         }
     }
 
@@ -51,7 +51,18 @@ impl Timer {
     /// Increment the TIMA register every n cycles (where n is determined by bits 1-0 of the TAC register).
     /// If TIMA overflows (since it's an u8 register it means going from 0xFF to 0x00), it is reset to the value specified in TMA register
     /// and an interrupt is requested.
+    ///
+    /// *When TIMA overflows, the value from TMA is copied, and the timer flag is set in IF, **but one M-cycle later (4 T-cycles).**
+    /// This means that TIMA is equal to $00 for the M-cycle after it overflows.*
     fn update_tima(&mut self, cycles_of_last_instruction: u8, memory: &mut MemoryBus) {
+        if self.tima_overflowed {
+            let tma = memory.get_tma_register();
+            memory.set_tima_register(tma);
+            memory.update_timer_flag_in_if_register(InterruptType::Timer, true);
+            self.tima_overflowed = false;
+            return;
+        }
+
         let tac = memory.get_tac_register();
         let timer_enabled = (tac & 0b00000100) != 0;
         if !timer_enabled {
@@ -71,8 +82,8 @@ impl Timer {
             let (increment_result, tima_overflowed) = tima.overflowing_add(1);
 
             if tima_overflowed {
-                tima = memory.get_tma_register();
-                memory.update_timer_flag_in_if_register(InterruptType::Timer, true);
+                tima = 0;
+                self.tima_overflowed = true;
             } else {
                 tima = increment_result;
             }
