@@ -1,6 +1,5 @@
 use crate::gameboy_core::cpu::Cpu;
 
-
 /// Trait for CPU jump instructions
 pub trait CpuJumpInstructions {
     fn jp_imm16(&mut self);
@@ -13,9 +12,12 @@ pub trait CpuJumpInstructions {
 impl CpuJumpInstructions for Cpu {
     /// Loads the 16-bit immediate value to the program counter (PC).
     fn jp_imm16(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         let imm16 = self.get_imm16();
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         self.registers.pc = imm16;
-        self.increment_16_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
     }
 
     /// Loads operand nn in the PC if condition cc and the flag status match.
@@ -26,8 +28,10 @@ impl CpuJumpInstructions for Cpu {
         if self.check_cc_condition(opcode) {
             self.jp_imm16();
         } else {
+            self.increment_4_cycles_and_update_timers();
             self.registers.increment_pc_twice();
-            self.increment_12_clock_cycles();
+            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_and_update_timers();
         }
     }
 
@@ -38,15 +42,17 @@ impl CpuJumpInstructions for Cpu {
     /// Example: 0xF6 as u8 = 246
     ///          0xF6 as i8 = -10 (two's complement interpretation).
     fn jr_imm8(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         // Read the signed offset (PC is already at opcode + 1)
         let imm8 = self.get_imm8() as i8; // Parse to i8 to handle
+        self.increment_4_cycles_and_update_timers();
         self.registers.increment_pc(); // Move past the offset byte
 
         // Add the signed offset to PC
         // We need to convert i8 to i16 first to handle negative numbers correctly
         self.registers.pc = (self.registers.pc as i16).wrapping_add(imm8 as i16) as u16;
 
-        self.increment_12_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
     }
 
     /// If condition cc and the flag status match, jumps -127 to +129 steps from the current address.
@@ -56,24 +62,25 @@ impl CpuJumpInstructions for Cpu {
         // Extract condition from bits 4-3 (for JR cc instructions)
         let condition = (opcode & 0b00011000) >> 3;
         let condition_met = match condition {
-            0 => !self.registers.flags.z,    // NZ
-            1 => self.registers.flags.z,     // Z
-            2 => !self.registers.flags.c,    // NC
-            3 => self.registers.flags.c,     // C
+            0 => !self.registers.flags.z, // NZ
+            1 => self.registers.flags.z,  // Z
+            2 => !self.registers.flags.c, // NC
+            3 => self.registers.flags.c,  // C
             _ => false,
         };
-        
+
         if condition_met {
             self.jr_imm8();
         } else {
+            self.increment_4_cycles_and_update_timers();
             self.registers.increment_pc(); // Move past the offset byte
-            self.increment_8_clock_cycles();
+            self.increment_4_cycles_and_update_timers();
         }
     }
-    
+
     /// Loads the contents of register pair HL in program counter PC.
     fn jp_hl(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.registers.pc = self.registers.get_hl();
-        self.increment_4_clock_cycles();
     }
 }

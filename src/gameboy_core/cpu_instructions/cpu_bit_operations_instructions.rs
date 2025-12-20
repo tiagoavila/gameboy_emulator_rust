@@ -13,6 +13,8 @@ impl CpuBitOperationsInstructions for Cpu {
     /// Test bit b in 8-bit register. Set Z flag if the bit is 0.
     /// Set H flag. Reset N flag.
     fn bit_b_r8(&mut self, cb_opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         let bit_index = (cb_opcode & 0b00111000) >> 3;
         let register = Self::get_source_register(cb_opcode);
         let value = self.registers.get_8bit_register_value(register);
@@ -32,14 +34,16 @@ impl CpuBitOperationsInstructions for Cpu {
         self.registers.flags.set_z_flag_from_u8(bit);
         self.registers.flags.set_h_flag(true);
         self.registers.flags.n = false;
-        self.increment_8_clock_cycles();
     }
     
     /// Test bit b in memory location pointed by HL register. Set Z flag if the bit is 0.
     /// Set H flag. Reset N flag.
     fn bit_b_hl(&mut self, cb_opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         let bit_index = (cb_opcode & 0b00111000) >> 3;
         let value = self.memory_bus.read_byte(self.registers.get_hl());
+        self.increment_4_cycles_and_update_timers();
 
         let bit = match bit_index {
             0 => (value >> 0) & 0x01,
@@ -56,11 +60,12 @@ impl CpuBitOperationsInstructions for Cpu {
         self.registers.flags.set_z_flag_from_u8(bit);
         self.registers.flags.set_h_flag(true);
         self.registers.flags.n = false;
-        self.increment_12_clock_cycles();
     }
 
     /// Sets to 1 the specified bit in specified 8-bit register.
     fn set_b_r8(&mut self, cb_opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         let bit_index = (cb_opcode & 0b00111000) >> 3;
         let register = Self::get_source_register(cb_opcode);
         let mut value = self.registers.get_8bit_register_value(register);
@@ -78,14 +83,16 @@ impl CpuBitOperationsInstructions for Cpu {
         };
         
         self.registers.set_8bit_register_value(register, value);
-        self.increment_8_clock_cycles();
     }
     
     /// Sets to 1 the specified bit in memory location pointed by HL register.
     fn set_b_hl(&mut self, cb_opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         let bit_index = (cb_opcode & 0b00111000) >> 3;
         let hl = self.registers.get_hl();
         let mut value = self.memory_bus.read_byte(hl);
+        self.increment_4_cycles_and_update_timers();
         
         value = match bit_index {
             0 => value | 0b01,
@@ -100,11 +107,13 @@ impl CpuBitOperationsInstructions for Cpu {
         };
         
         self.memory_bus.write_byte(hl, value);
-        self.increment_16_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
     }
 
     /// Resets to 0 the specified bit in specified 8-bit register.
     fn reset_b_r8(&mut self, cb_opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         let bit_index = (cb_opcode & 0b00111000) >> 3;
         let register = Self::get_source_register(cb_opcode);
         let mut value = self.registers.get_8bit_register_value(register);
@@ -122,14 +131,16 @@ impl CpuBitOperationsInstructions for Cpu {
         };
         
         self.registers.set_8bit_register_value(register, value);
-        self.increment_8_clock_cycles();
     }
     
     /// Sets to 1 the specified bit in memory location pointed by HL register.
     fn reset_b_hl(&mut self, cb_opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         let bit_index = (cb_opcode & 0b00111000) >> 3;
         let hl = self.registers.get_hl();
         let mut value = self.memory_bus.read_byte(hl);
+        self.increment_4_cycles_and_update_timers();
         
         value = match bit_index {
             0 => value & 0b11111110,
@@ -144,6 +155,6 @@ impl CpuBitOperationsInstructions for Cpu {
         };
         
         self.memory_bus.write_byte(hl, value);
-        self.increment_16_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
     }
 }

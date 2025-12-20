@@ -13,27 +13,27 @@ pub trait CpuMiscellaneousInstructions {
 impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     /// No Operation - Do nothing for one CPU cycle.
     fn nop(&mut self) {
-        self.increment_4_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
         return;
     }
 
     /// This instruction disables interrupts but not immediately. Interrupts are disabled after instruction after DI is executed.
     fn di(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.di_instruction_pending = true;
-        self.increment_4_clock_cycles();
     }
 
     fn ei(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.ei_instruction_pending = true;
-        self.increment_4_clock_cycles();
     }
 
     /// Flips the carry flag CY. H and N flags are reset.
     fn ccf(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.registers.flags.c = !self.registers.flags.c;
         self.registers.flags.h = false;
         self.registers.flags.n = false;
-        self.increment_4_clock_cycles();
     }
 
     /// Adjusts register A to form a correct BCD representation after a binary addition or subtraction.
@@ -46,6 +46,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     /// - If the C flag is set, subtract 0x60 from A.
     /// After the adjustment, the Z flag is set if A is zero, and the H flag is cleared.
     fn daa(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         let mut adjustment = 0u8;
         
         if !self.registers.flags.n {
@@ -72,31 +73,30 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
         
         self.registers.flags.set_z_flag_from_u8(self.registers.a);
         self.registers.flags.set_h_flag(false); // H flag always cleared after DAA
-        self.increment_4_clock_cycles();
     }
 
     /// Inverts all bits in register A. N and H flags are set.
     fn cpl(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.registers.a = !self.registers.a;
         self.registers.flags.n = true;
         self.registers.flags.h = true;
-        self.increment_4_clock_cycles();
     }
     
     /// Sets the carry flag CY. H and N flags are reset.
     fn scf(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.registers.flags.set_c_flag(true);
         self.registers.flags.h = false;
         self.registers.flags.n = false;
-        self.increment_4_clock_cycles();
     }
 
     fn halt(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.is_halt_mode = true;
-        self.increment_4_clock_cycles();
     }
     
     fn stop(&mut self) {
-        self.increment_4_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
     }
 }

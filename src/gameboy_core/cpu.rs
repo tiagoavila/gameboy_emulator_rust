@@ -62,9 +62,10 @@ impl Cpu {
         self.executed_instructions_count += 1;
 
         let opcode = self.fetch_opcode();
-        let cycles_before = self.clock_cycles;
 
         cpu_utils::log(self, opcode).unwrap();
+
+        self.handle_interrupts();
 
         if !self.is_halt_mode {
             self.registers.increment_pc();
@@ -73,10 +74,6 @@ impl Cpu {
 
         self.enable_ime_if_ei_instruction_pending(opcode);
         self.disable_ime_if_di_instruction_pending(opcode);
-        
-        self.update_timers(cycles_before);
-
-        self.handle_interrupts();
     }
 
     fn fetch_opcode(&mut self) -> u8 {
@@ -453,34 +450,10 @@ impl Cpu {
         self.ime = value;
     }
     
-    /// Increment clock cycles by 4
-    pub(crate) fn increment_4_clock_cycles(&mut self) {
+    /// Increment clock cycles by 4 and update timers
+    pub(crate) fn increment_4_cycles_and_update_timers(&mut self) {
         self.increment_cycles(4);
-    }
-
-    /// Increment clock cycles by 8
-    pub(crate) fn increment_8_clock_cycles(&mut self) {
-        self.increment_cycles(8);
-    }
-    
-    /// Increment clock cycles by 12
-    pub(crate) fn increment_12_clock_cycles(&mut self) {
-        self.increment_cycles(12);
-    }
-
-    /// Increment clock cycles by 16
-    pub(crate) fn increment_16_clock_cycles(&mut self) {
-        self.increment_cycles(16);
-    }
-
-    /// Increment clock cycles by 20
-    pub(crate) fn increment_20_clock_cycles(&mut self) {
-        self.increment_cycles(20);
-    }
-
-    /// Increment clock cycles by 24
-    pub(crate) fn increment_24_clock_cycles(&mut self) {
-        self.increment_cycles(24);
+        self.update_timers();
     }
 
     fn increment_cycles(&mut self, value: u8) {
@@ -492,9 +465,9 @@ impl Cpu {
         self.ppu.update_screen_buffer(&self.memory_bus);
     }
     
-    /// Update the timers based on the number of clock cycles elapsed
-    pub fn update_timers(&mut self, cycles_before: u64) {
-        self.timer.update(cycles_before, self.clock_cycles, &mut self.memory_bus);
+    /// Update the timers after every instruction execution
+    pub fn update_timers(&mut self) {
+        Timer::update(self);
     }
     
     /// Handle interrupts if any are requested

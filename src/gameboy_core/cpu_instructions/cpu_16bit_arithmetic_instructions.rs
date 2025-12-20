@@ -12,6 +12,8 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
     /// Adds the contents of a 16-bit register to the contents of register pair HL and stores the results in HL.
     /// The 16-bit register can be BC, DE, HL or SP.
     fn add_hl_r16(&mut self, opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         let source_register = Self::get_16bit_destination_register(opcode);
         let value = match source_register {
             0b00 => self.registers.get_bc(),
@@ -29,12 +31,13 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.n = false;
         self.registers.flags.set_c_flag(carry);
         self.registers.flags.set_h_flag(h_flag);
-        self.increment_8_clock_cycles();
     }
 
     /// Adds the signed 8-bit immediate value to the stack pointer SP and stores the result in SP.
     fn add_sp_imm8(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         let imm8 = self.get_imm8(); // u8 (e.g., 0xFF)
+        self.increment_4_cycles_and_update_timers();
         let sp_val = self.registers.sp;
         
         let (result, c_flag, h_flag) = sp_val.add_u8_as_signed(imm8);
@@ -75,11 +78,13 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(h_flag);
 
         self.registers.increment_pc();
-        self.increment_16_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
     } 
 
     /// Increments the contents of a 16-bit register by 1. The 16-bit register can be BC, DE, HL or SP.
     fn inc_r16(&mut self, opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
         let source_register = Self::get_16bit_destination_register(opcode);
         let value = match source_register {
             0b00 => self.registers.get_bc(),
@@ -99,11 +104,12 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
             _ => (),
         }
 
-        self.increment_8_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
     }
 
     /// Decrements the contents of a 16-bit register by 1. The 16-bit register can be BC, DE, HL or SP.
     fn dec_r16(&mut self, opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
         let source_register = Self::get_16bit_destination_register(opcode);
         let value = match source_register {
             0b00 => self.registers.get_bc(),
@@ -122,6 +128,6 @@ impl Cpu16BitArithmeticInstructions for crate::gameboy_core::cpu::Cpu {
             0b11 => self.registers.sp = result,
             _ => (),
         }
-        self.increment_8_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
     }
 }

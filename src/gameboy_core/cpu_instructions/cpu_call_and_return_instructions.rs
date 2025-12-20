@@ -17,16 +17,24 @@ impl CpuCallAndReturnInstructions for Cpu {
     /// value are then loaded in the higher-order byte of the PC, and the SP is again incremented by 1. (The
     /// value of SP is 2 larger than before instruction execution.)
     fn ret(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.registers.pc = self.pop_value_from_sp();
-        self.increment_16_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
     }
 
     /// Pushes the current value of the PC to the memory stack and loads to the PC the 16-bit immediate value.
     /// Then next instruction is fetched from the address specified by the new content of PC.
     fn call_imm16(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.push_value_to_sp(self.registers.pc + 2); // +2 to point to the next instruction after call
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         self.registers.pc = self.get_imm16();
-        self.increment_24_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
     }
 
     /// If condition cc matches the flag, the PC value is pushed onto the stack and the PC is loaded with the 16-bit immediate value.
@@ -39,8 +47,10 @@ impl CpuCallAndReturnInstructions for Cpu {
         if self.check_cc_condition(opcode) {
             self.call_imm16();
         } else {
+            self.increment_4_cycles_and_update_timers();
             self.registers.increment_pc_twice();
-            self.increment_12_clock_cycles();
+            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_and_update_timers();
         }
     }
 
@@ -51,7 +61,11 @@ impl CpuCallAndReturnInstructions for Cpu {
     /// by 1, and the lower-order byte of the PC is loaded in the memory address specified by that value of the SP.
     /// The RST instruction can be used to jump to 1 of 8 addresses.
     fn rst(&mut self, opcode: u8) {
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         self.push_value_to_sp(self.registers.pc);
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         self.registers.pc = match (opcode & 0b00111000) >> 3 {
             0 => 0x0,
             1 => 0x0008,
@@ -63,24 +77,31 @@ impl CpuCallAndReturnInstructions for Cpu {
             7 => 0x0038,
             _ => 0x0,
         };
-        self.increment_16_clock_cycles();
     }
 
     /// If condition cc matches the flag, pops from the memory stack the PC value pushed when the subroutine was called.
     fn ret_cc(&mut self, opcode: u8) {
         if self.check_cc_condition(opcode) {
+            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_and_update_timers();
             self.registers.pc = self.pop_value_from_sp();
-            self.increment_20_clock_cycles();
+            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_and_update_timers();
         } else {
-            self.increment_8_clock_cycles();
+            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_and_update_timers();
         }
         // If condition is false, PC stays at the next instruction (already incremented by tick)
     }
-    
+
     // Pop two bytes from stack & jump to that address then enable interrupts.
     fn reti(&mut self) {
+        self.increment_4_cycles_and_update_timers();
         self.registers.pc = self.pop_value_from_sp();
+        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_and_update_timers();
         self.set_ime(true);
-        self.increment_16_clock_cycles();
+        self.increment_4_cycles_and_update_timers();
     }
 }

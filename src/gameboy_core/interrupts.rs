@@ -51,26 +51,31 @@ impl InterruptsHandler {
         if if_register_flags.vblank && ie_register_flags.vblank {
             Self::do_before_handling_interrupt(cpu, InterruptType::VBlank);
             Self::do_handle_interrupt(cpu, InterruptType::VBlank);
+            return;
         }
 
         if if_register_flags.lcd && ie_register_flags.lcd {
             Self::do_before_handling_interrupt(cpu, InterruptType::LCD);
             Self::do_handle_interrupt(cpu, InterruptType::LCD);
+            return;
         }
 
         if if_register_flags.timer && ie_register_flags.timer {
             Self::do_before_handling_interrupt(cpu, InterruptType::Timer);
             Self::do_handle_interrupt(cpu, InterruptType::Timer);
+            return;
         }
 
         if if_register_flags.serial && ie_register_flags.serial {
             Self::do_before_handling_interrupt(cpu, InterruptType::Serial);
             Self::do_handle_interrupt(cpu, InterruptType::Serial);
+            return;
         }
 
         if if_register_flags.joypad && ie_register_flags.joypad {
             Self::do_before_handling_interrupt(cpu, InterruptType::Joypad);
             Self::do_handle_interrupt(cpu, InterruptType::Joypad);
+            return;
         }
 
         // Setting IME to its previous value is handled by the interrupt handler itself, using the RETI instruction or by calling EI instruction.
@@ -113,7 +118,11 @@ impl InterruptsHandler {
             InterruptType::Joypad => JOYPAD_INTERRUPT_HANDLER_ADDRESS,
         };
 
-        cpu.increment_20_clock_cycles();
+        cpu.increment_4_cycles_and_update_timers();
+        cpu.increment_4_cycles_and_update_timers();
+        cpu.increment_4_cycles_and_update_timers();
+        cpu.increment_4_cycles_and_update_timers();
+        cpu.increment_4_cycles_and_update_timers();
         cpu.is_halt_mode = false;
     }
 
