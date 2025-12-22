@@ -1,5 +1,5 @@
 use crate::gameboy_core::{
-    constants::{EIGHT_BIT_REGISTERS, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, interrupts::InterruptsHandler, ppu::Ppu, timer::Timer
+    constants::{EIGHT_BIT_REGISTERS, INTERRUPTS_HANDLERS_ADDRESSES, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, interrupts::InterruptsHandler, ppu::Ppu, timer::Timer
 };
 
 pub struct Cpu {
@@ -63,13 +63,22 @@ impl Cpu {
 
         let opcode = self.fetch_opcode();
 
-        cpu_utils::log(self, opcode).unwrap();
+        // For whateve reason Dr Game boy doensn´t log interrupts handlers addresses, this is just to match their logs
+        if !INTERRUPTS_HANDLERS_ADDRESSES.contains(&self.registers.pc) {
+            cpu_utils::log(self, opcode).unwrap();
+        } 
 
-        self.handle_interrupts();
+        let interrupt_triggered = self.handle_interrupts();
+        if interrupt_triggered {
+            return;
+        }
 
         if !self.is_halt_mode {
             self.registers.increment_pc();
             self.execute(opcode);
+        } else {
+            // When in halt mode the CPU still consumes cycles
+            self.increment_4_cycles_and_update_timers();
         }
 
         self.enable_ime_if_ei_instruction_pending(opcode);
@@ -471,7 +480,7 @@ impl Cpu {
     }
     
     /// Handle interrupts if any are requested
-    pub fn handle_interrupts(&mut self) {
-        InterruptsHandler::handle(self);
+    pub fn handle_interrupts(&mut self) -> bool {
+        InterruptsHandler::handle(self)
     }
 }

@@ -24,28 +24,25 @@ pub fn read_rom(file_path: &str) -> io::Result<Vec<u8>> {
 
 pub(crate) fn log(cpu: &mut Cpu, opcode: u8) -> io::Result<()> {
     log_state(cpu, opcode).unwrap();
-    log_to_dr_gameboy(cpu, cpu.registers.pc)
+    log_to_dr_gameboy(cpu)
 }
 
 pub(crate) fn log_state(cpu: &Cpu, opcode: u8) -> io::Result<()> {
     if cpu.is_debug_mode {
         let file_path = "instructions_log.txt";
-        
+        let registers_state = get_registers_state_for_log(cpu, true);
+
         // Format the log line
         let log_line = format!(
-            "Fetched opcode: 0x{:02X} (binary: 0b{:08b}) at PC: 0x{:04X}\n",
-            opcode, opcode, cpu.registers.pc
+            "Op: 0x{:02X} {}", opcode, registers_state
         );
-        
+
         // Open the file in append mode and write the log line
-        let mut file = File::options()
-            .create(true)
-            .append(true)
-            .open(file_path)?;
-        
+        let mut file = File::options().create(true).append(true).open(file_path)?;
+
         file.write_all(log_line.as_bytes())?;
     }
-    
+
     Ok(())
 }
 
@@ -90,23 +87,45 @@ pub fn print_state(cpu: &Cpu) {
 
 /// Appends a line to a Dr. Gameboy log file with CPU state in the format:
 /// A:00 F:11 B:22 C:33 D:44 E:55 H:66 L:77 SP:8888 PC:9999 PCMEM:AA,BB,CC,DD
-pub fn log_to_dr_gameboy(cpu: &Cpu, pc_before_increment: u16) -> io::Result<()> {
+pub fn log_to_dr_gameboy(cpu: &Cpu) -> io::Result<()> {
     let file_path = "dr_gameboy_log.txt";
-    
+
+    let log_line = get_registers_state_for_log(cpu, false);
+
+    // Open the file in append mode and write the log line
+    let mut file = File::options().create(true).append(true).open(file_path)?;
+
+    file.write_all(log_line.as_bytes())?;
+
+    Ok(())
+}
+
+pub fn get_registers_state_for_log(cpu: &Cpu, detailed_display_flags: bool) -> String {
     // Get the flags register as a u8 value
     let flags_value = cpu.registers.flags.get_flags_as_u8();
-    
+    let flags_string = if detailed_display_flags {
+        format!(
+            "{}{}{}{}",
+            if cpu.registers.flags.c { "C" } else { "-" },
+            if cpu.registers.flags.h { "H" } else { "-" },
+            if cpu.registers.flags.n { "N" } else { "-" },
+            if cpu.registers.flags.z { "Z" } else { "-" },
+        )
+    } else {
+        format!("{:02X}", flags_value)
+    };
+
     // Read the 4 bytes at PC and PC+1, PC+2, PC+3
-    let pc_mem_0 = cpu.memory_bus.read_byte(pc_before_increment);
-    let pc_mem_1 = cpu.memory_bus.read_byte(pc_before_increment.wrapping_add(1));
-    let pc_mem_2 = cpu.memory_bus.read_byte(pc_before_increment.wrapping_add(2));
-    let pc_mem_3 = cpu.memory_bus.read_byte(pc_before_increment.wrapping_add(3));
-    
+    let pc_mem_0 = cpu.memory_bus.read_byte(cpu.registers.pc);
+    let pc_mem_1 = cpu.memory_bus.read_byte(cpu.registers.pc.wrapping_add(1));
+    let pc_mem_2 = cpu.memory_bus.read_byte(cpu.registers.pc.wrapping_add(2));
+    let pc_mem_3 = cpu.memory_bus.read_byte(cpu.registers.pc.wrapping_add(3));
+
     // Format the log line
     let log_line = format!(
-        "A:{:02X} F:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}\n",
+        "A:{:02X} F:{} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}\n",
         cpu.registers.a,
-        flags_value,
+        flags_string,
         cpu.registers.b,
         cpu.registers.c,
         cpu.registers.d,
@@ -114,21 +133,19 @@ pub fn log_to_dr_gameboy(cpu: &Cpu, pc_before_increment: u16) -> io::Result<()> 
         cpu.registers.h,
         cpu.registers.l,
         cpu.registers.sp,
-        pc_before_increment,
+        cpu.registers.pc,
         pc_mem_0,
         pc_mem_1,
         pc_mem_2,
         pc_mem_3
     );
-    
-    // Open the file in append mode and write the log line
-    let mut file = File::options()
-        .create(true)
-        .append(true)
-        .open(file_path)?;
-    
-    file.write_all(log_line.as_bytes())?;
-    
+    log_line
+}
+
+pub(crate) fn clear_logs() -> io::Result<()> {
+    let file_path = "instructions_log.txt";
+    let file = File::create(file_path)?;
+    file.set_len(0)?;
     Ok(())
 }
 

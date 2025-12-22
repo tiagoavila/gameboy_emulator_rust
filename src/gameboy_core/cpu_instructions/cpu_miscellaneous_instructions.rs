@@ -1,4 +1,7 @@
+use crate::gameboy_core::registers_contants::{IE, IF};
+
 pub trait CpuMiscellaneousInstructions {
+    fn is_interrupt_pending(&self) -> bool;
     fn stop(&mut self);
     fn halt(&mut self);
     fn daa(&mut self);
@@ -40,7 +43,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     /// The adjustment is based on the values of the N, H, and C flags.
     /// If the previous operation was an addition (N flag is reset):
     /// - If the H flag is set or the lower nibble of A is greater than 9, add 0x06 to A.
-    /// - If the C flag is set or A is greater than 0x99, add 0x60 to A and set the C flag. 
+    /// - If the C flag is set or A is greater than 0x99, add 0x60 to A and set the C flag.
     /// If the previous operation was a subtraction (N flag is set):
     /// - If the H flag is set, subtract 0x06 from A.
     /// - If the C flag is set, subtract 0x60 from A.
@@ -48,7 +51,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     fn daa(&mut self) {
         self.increment_4_cycles_and_update_timers();
         let mut adjustment = 0u8;
-        
+
         if !self.registers.flags.n {
             // After addition (ADD, ADC, INC)
             if self.registers.flags.h || (self.registers.a & 0x0F) > 0x09 {
@@ -70,7 +73,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
             }
             self.registers.a = self.registers.a.wrapping_add(adjustment);
         }
-        
+
         self.registers.flags.set_z_flag_from_u8(self.registers.a);
         self.registers.flags.set_h_flag(false); // H flag always cleared after DAA
     }
@@ -82,7 +85,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.n = true;
         self.registers.flags.h = true;
     }
-    
+
     /// Sets the carry flag CY. H and N flags are reset.
     fn scf(&mut self) {
         self.increment_4_cycles_and_update_timers();
@@ -93,10 +96,24 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
 
     fn halt(&mut self) {
         self.increment_4_cycles_and_update_timers();
+        let is_interrupt_pending = self.is_interrupt_pending();
+
+        if is_interrupt_pending {
+            // there is a pending interrupt, so we do not enter halt mode
+            return;
+        }
+
         self.is_halt_mode = true;
     }
-    
+
     fn stop(&mut self) {
         self.increment_4_cycles_and_update_timers();
+    }
+
+    fn is_interrupt_pending(&self) -> bool {
+        let if_register = self.memory_bus.read_byte(IF);
+        let ie_register = self.memory_bus.read_byte(IE);
+
+        (if_register & ie_register) != 0
     }
 }

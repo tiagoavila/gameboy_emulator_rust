@@ -60,7 +60,7 @@ impl Timer {
             cpu.memory_bus.set_tima_register(tma);
             cpu.memory_bus.update_timer_flag_in_if_register(InterruptType::Timer, true);
             cpu.timer.tima_overflowed = false;
-            cpu.timer.cycles_executed_tima += ( cycles_of_last_instruction - 4 ) as u16; // Account for the 4 T-cycles delay
+            cpu.timer.cycles_executed_tima += (cycles_of_last_instruction - 4) as u16; // Account for the 4 T-cycles delay
             return;
         }
 

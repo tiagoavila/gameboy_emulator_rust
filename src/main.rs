@@ -1,7 +1,5 @@
 use crate::gameboy_core::{
-    constants::{SCREEN_HEIGHT, SCREEN_WIDTH},
-    cpu_utils,
-    ppu_components::{Tile, TilePixelValue},
+    constants::{SCREEN_HEIGHT, SCREEN_WIDTH}, cpu, cpu_utils, ppu_components::{Tile, TilePixelValue}
 };
 use minifb::{Key, Window, WindowOptions};
 
@@ -19,7 +17,8 @@ fn main() {
 
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();
 
-    // clear dr gameboy log file at start
+    // clear previous logs
+    cpu_utils::clear_logs().unwrap();
     cpu_utils::clear_dr_gameboy_log().unwrap();
 
     let mut cpu = gameboy_core::cpu::Cpu::start(rom_binary, false);

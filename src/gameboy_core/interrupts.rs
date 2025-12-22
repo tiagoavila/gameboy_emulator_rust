@@ -3,9 +3,7 @@ use crate::gameboy_core::{
         JOYPAD_INTERRUPT_HANDLER_ADDRESS, LCD_STAT_INTERRUPT_HANDLER_ADDRESS,
         SERIAL_INTERRUPT_HANDLER_ADDRESS, TIMER_INTERRUPT_HANDLER_ADDRESS,
         VBLANK_INTERRUT_HANDLER_ADDRESS,
-    },
-    cpu::Cpu,
-    registers_contants::{IE, IF},
+    }, cpu::Cpu, cpu_instructions::cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, registers_contants::{IE, IF}
 };
 
 pub enum InterruptType {
@@ -30,13 +28,13 @@ pub struct InterruptStatus {
 impl InterruptsHandler {
     /// Checks if any interrupts are requested by checking the IME, IF and IE registers.
     /// If an interrupt is requested, it handles it by calling the appropriate interrupt handler.
-    pub fn handle(cpu: &mut Cpu) {
+    pub fn handle(cpu: &mut Cpu) -> bool {
         if !cpu.ime {
             if cpu.is_halt_mode {
                 Self::check_pending_interrupts_to_exit_halt_mode(cpu);
             }
 
-            return;
+            return false;
         }
 
         let if_register = cpu.memory_bus.read_byte(IF);
@@ -51,33 +49,34 @@ impl InterruptsHandler {
         if if_register_flags.vblank && ie_register_flags.vblank {
             Self::do_before_handling_interrupt(cpu, InterruptType::VBlank);
             Self::do_handle_interrupt(cpu, InterruptType::VBlank);
-            return;
+            return true;
         }
 
         if if_register_flags.lcd && ie_register_flags.lcd {
             Self::do_before_handling_interrupt(cpu, InterruptType::LCD);
             Self::do_handle_interrupt(cpu, InterruptType::LCD);
-            return;
+            return true;
         }
 
         if if_register_flags.timer && ie_register_flags.timer {
             Self::do_before_handling_interrupt(cpu, InterruptType::Timer);
             Self::do_handle_interrupt(cpu, InterruptType::Timer);
-            return;
+            return true;
         }
 
         if if_register_flags.serial && ie_register_flags.serial {
             Self::do_before_handling_interrupt(cpu, InterruptType::Serial);
             Self::do_handle_interrupt(cpu, InterruptType::Serial);
-            return;
+            return true;
         }
 
         if if_register_flags.joypad && ie_register_flags.joypad {
             Self::do_before_handling_interrupt(cpu, InterruptType::Joypad);
             Self::do_handle_interrupt(cpu, InterruptType::Joypad);
-            return;
+            return true;
         }
 
+        return false;
         // Setting IME to its previous value is handled by the interrupt handler itself, using the RETI instruction or by calling EI instruction.
         // Return from an interrupt routine can be performed by either RETI or RET instruction.
         // The RETI instruction enables interrupts after doing a return operation.
@@ -145,10 +144,7 @@ impl InterruptsHandler {
     
     /// If any interrupts are pending (IE and IF have matching bits set), exit HALT mode even if IME is disabled.
     fn check_pending_interrupts_to_exit_halt_mode(cpu: &mut Cpu) {
-        let if_register = cpu.memory_bus.read_byte(IF);
-        let ie_register = cpu.memory_bus.read_byte(IE);
-
-        if if_register != 0 && ie_register != 0 {
+        if cpu.is_interrupt_pending() {
             cpu.is_halt_mode = false;
         }
     }
