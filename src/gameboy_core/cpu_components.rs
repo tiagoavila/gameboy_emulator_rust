@@ -273,10 +273,10 @@ impl MemoryBus {
     }
 
     pub fn read_byte(&self, address: u16) -> u8 {
-        if address == LY {
-            // LY register always returns the current scanline (for simplicity, we return 0 here)
-            return 0x90;
-        }
+        // if address == LY {
+        //     // LY register always returns the current scanline (for simplicity, we return 0 here)
+        //     return 0x90;
+        // }
 
         self.memory[address as usize]
     }
