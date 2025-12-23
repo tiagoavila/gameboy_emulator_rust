@@ -11,7 +11,7 @@ This project is a Gameboy emulator written in Rust. The goal is to accurately em
 This emulator is tested against Blargg's comprehensive CPU instruction test suite. The following individual tests are included:
 
 - `01-special.gb` - Special operations ✅
-- `02-interrupts.gb` - Interrupt handling ⏳
+- `02-interrupts.gb` - Interrupt handling ✅
 - `03-op sp,hl.gb` - Stack pointer and HL register operations ✅
 - `04-op r,imm.gb` - Register and immediate value operations ✅
 - `05-op rp.gb` - Register pair operations ✅ 
@@ -21,5 +21,5 @@ This emulator is tested against Blargg's comprehensive CPU instruction test suit
 - `09-op r,r.gb` - Register to register operations ✅ 
 - `10-bit ops.gb` - Bit operations ✅  
 - `11-op a,(hl).gb` - Accumulator and indirect HL operations ✅   
-- `cpu_instrs.gb` - Complete CPU instruction test ⏳
+- `cpu_instrs.gb` - Complete CPU instruction test ✅ 
 

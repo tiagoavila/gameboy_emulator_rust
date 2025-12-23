@@ -8,11 +8,8 @@ pub mod gameboy_core;
 const SCREEN_SCALE: usize = 3;
 
 fn main() {
-    // let rom_file = "games/Motocross Maniacs (USA).gb";
-    // let rom_file = "tests/blarggs_test_roms/cpu_instrs.gb";
+    let rom_file = "games/Tetris.gb";
 
-    // TODO: test below roms after fixing instructions they test
-    let rom_file = "tests/blarggs_test_roms/02-interrupts.gb";
     // let rom_file = "tests/nintendo_logo.gb";
 
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();
@@ -92,7 +89,7 @@ fn render_tile_to_buffer(tile: &Tile, buffer: &mut [u32], start_row: usize, star
 
 fn run_gameboy(cpu: &mut gameboy_core::cpu::Cpu) {
     let mut window = Window::new(
-        "Gameboy Emulator - Press SPACE to tick CPU",
+        "Gameboy Emulator",
         SCREEN_WIDTH * SCREEN_SCALE,
         SCREEN_HEIGHT * SCREEN_SCALE,
         WindowOptions::default(),

@@ -291,11 +291,6 @@ impl MemoryBus {
             .copy_from_slice(&rom_binary);
     }
 
-    /// Gets a reference to the VRAM (Video RAM) region
-    pub fn get_vram(&self) -> &[u8] {
-        &self.memory[0x8000..=0x9FFF]
-    }
-
     /// Gets a reference to the VRAM tile data region which covers addressess $8000-$97FF
     pub fn get_vram_tile_data(&self) -> &[u8] {
         &self.memory[0x8000..=0x97FF]

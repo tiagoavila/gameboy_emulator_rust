@@ -32,6 +32,10 @@ impl Ppu {
         screen_buffer
     }
     
+    pub fn get_tiles_data(&self, memory_bus: &cpu_components::MemoryBus) -> [Tile; 384] {
+        self.read_tiles(memory_bus)
+    }
+    
     /// Returns the visible portion of the background buffer based on the SCX and SCY scroll values and to fit the 160x144 screen.
     /// The PPU calculates the bottom-right coordinates of the viewport with those formulas:
     /// bottom := (SCY + 143) % 256 and right := (SCX + 159) % 256.
@@ -59,7 +63,6 @@ impl Ppu {
         let bg_tile_map = self.get_bg_tile_map_as_grid_32x32(memory_bus, &lcdc_register);
         let mut bg_buffer = [[0u8; BG_AND_WINDOW_MAP_SCREEN_SIZE]; BG_AND_WINDOW_MAP_SCREEN_SIZE];
     
-        // print background tile map to console
         for tile_map_row in 0..BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL {
             for tile_map_col in 0..BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL {
                 let tile_index = bg_tile_map[tile_map_row][tile_map_col] as usize;
@@ -145,11 +148,7 @@ impl Ppu {
 
     /// Converts the background tile map from a flat vector to a 32x32 grid.
     /// To accomplish this, it reads the tile map from memory and then parses to a 2D array by calculating row and column indices.
-    fn get_bg_tile_map_as_grid_32x32(
-        &self,
-        memory_bus: &cpu_components::MemoryBus,
-        lcdc: &ppu_components::LcdcRegister,
-    ) -> [[u8; 32]; 32] {
+    fn get_bg_tile_map_as_grid_32x32( &self, memory_bus: &cpu_components::MemoryBus, lcdc: &ppu_components::LcdcRegister) -> [[u8; 32]; 32] {
         let tile_map_vec = memory_bus.get_bg_tile_map(lcdc).to_vec();
         let mut tile_map_grid = [[0u8; 32]; 32];
         for (i, &value) in tile_map_vec.iter().enumerate() {

@@ -99,6 +99,10 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
         let is_interrupt_pending = self.is_interrupt_pending();
 
         if is_interrupt_pending {
+            if !self.ime {
+                // TODO: Handle the HALT bug here
+            }
+
             // there is a pending interrupt, so we do not enter halt mode
             return;
         }
