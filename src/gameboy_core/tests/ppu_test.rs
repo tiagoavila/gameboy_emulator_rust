@@ -166,7 +166,7 @@ pub fn setup_nintendo_display(cpu: &mut Cpu) {
 
 #[cfg(test)]
 mod tests {
-    use crate::gameboy_core::{constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BGP, LCDC, SCREEN_HEIGHT, SCREEN_WIDTH, TILE_MAP_AREA_0_START}, ppu_components};
+    use crate::gameboy_core::{constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BGP, LCDC, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH, TILE_MAP_AREA_0_START}, ppu_components};
     use minifb::{Key, Window, WindowOptions};
 
     #[test]
@@ -278,10 +278,10 @@ mod tests {
         }
     }
 
-    fn render_visible_screen_with_minifb(screen_buffer: &[[u8; SCREEN_WIDTH]; SCREEN_HEIGHT]) {
+    fn render_visible_screen_with_minifb(screen_buffer: &[[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT]) {
         const SCREEN_SCALE: usize = 3;
-        const BUFFER_WIDTH: usize = SCREEN_WIDTH * SCREEN_SCALE;
-        const BUFFER_HEIGHT: usize = SCREEN_HEIGHT * SCREEN_SCALE;
+        const BUFFER_WIDTH: usize = GAME_SECTION_WIDTH * SCREEN_SCALE;
+        const BUFFER_HEIGHT: usize = GAME_SECTION_HEIGHT * SCREEN_SCALE;
 
         let mut window = Window::new(
             "Nintendo Logo - Printing the visible screen of 160x144 pixels", 
@@ -299,8 +299,8 @@ mod tests {
         let mut buffer: Vec<u32> = vec![0xFFFFFF; BUFFER_WIDTH * BUFFER_HEIGHT];
 
         // Convert 2D screen buffer to 1D buffer with scaling
-        for row in 0..SCREEN_HEIGHT {
-            for col in 0..SCREEN_WIDTH {
+        for row in 0..GAME_SECTION_HEIGHT {
+            for col in 0..GAME_SECTION_WIDTH {
                 let pixel_value = screen_buffer[row][col];
                 let color = colors[pixel_value as usize];
 

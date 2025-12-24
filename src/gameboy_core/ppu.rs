@@ -1,17 +1,17 @@
 use crate::gameboy_core::{
-    constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL, SCREEN_HEIGHT, SCREEN_WIDTH},
+    constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH},
     cpu_components,
     ppu_components::{self, Tile, TilePixelValue},
 };
 
 pub struct Ppu {
-    pub screen: [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT], // 144 rows of 160 pixels
+    pub screen: [[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT], // 144 rows of 160 pixels
 }
 
 impl Ppu {
     pub(crate) fn new() -> Self {
         Self {
-            screen: [[0; SCREEN_WIDTH]; SCREEN_HEIGHT],
+            screen: [[0; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT],
         }
     }
     
@@ -21,7 +21,7 @@ impl Ppu {
 
     /// Generates the screen buffer representing the visible 160x144 pixel screen.
     /// This will build the Background first, then apply the Window (if enabled), and finally render the Objects - Sprites (if enabled).
-    pub fn get_screen_buffer(&self, memory_bus: &cpu_components::MemoryBus) -> [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT] {
+    pub fn get_screen_buffer(&self, memory_bus: &cpu_components::MemoryBus) -> [[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT] {
         let tiles = self.read_tiles(memory_bus);
         let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(memory_bus);
 
@@ -40,13 +40,13 @@ impl Ppu {
     /// The PPU calculates the bottom-right coordinates of the viewport with those formulas:
     /// bottom := (SCY + 143) % 256 and right := (SCX + 159) % 256.
     /// As suggested by the modulo operations, in case the values are larger than 255 they will “wrap around” towards the top-left corner of the tilemap.
-    fn get_visible_bg_buffer(&self, bg_buffer: &[[u8; BG_AND_WINDOW_MAP_SCREEN_SIZE]; BG_AND_WINDOW_MAP_SCREEN_SIZE], memory_bus: &cpu_components::MemoryBus) -> [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT] {
+    fn get_visible_bg_buffer(&self, bg_buffer: &[[u8; BG_AND_WINDOW_MAP_SCREEN_SIZE]; BG_AND_WINDOW_MAP_SCREEN_SIZE], memory_bus: &cpu_components::MemoryBus) -> [[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT] {
         let scy = memory_bus.get_scy_register() as usize;
         let scx = memory_bus.get_scx_register() as usize;
-        let mut visible_bg_buffer = [[0u8; SCREEN_WIDTH]; SCREEN_HEIGHT];
+        let mut visible_bg_buffer = [[0u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT];
 
-        for screen_row in 0..SCREEN_HEIGHT {
-            for screen_col in 0..SCREEN_WIDTH {
+        for screen_row in 0..GAME_SECTION_HEIGHT {
+            for screen_col in 0..GAME_SECTION_WIDTH {
                 let bg_row = (scy + screen_row) % BG_AND_WINDOW_MAP_SCREEN_SIZE;
                 let bg_col = (scx + screen_col) % BG_AND_WINDOW_MAP_SCREEN_SIZE;
                 visible_bg_buffer[screen_row][screen_col] = bg_buffer[bg_row][bg_col];

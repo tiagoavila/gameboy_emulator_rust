@@ -1,5 +1,5 @@
 use crate::gameboy_core::{
-    constants::{EIGHT_BIT_REGISTERS, INTERRUPTS_HANDLERS_ADDRESSES, SCREEN_HEIGHT, SCREEN_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, interrupts::InterruptsHandler, ppu::Ppu, timer::Timer
+    constants::{EIGHT_BIT_REGISTERS, INTERRUPTS_HANDLERS_ADDRESSES, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, interrupts::InterruptsHandler, ppu::Ppu, timer::Timer
 };
 
 pub struct Cpu {
@@ -429,7 +429,7 @@ impl Cpu {
         self.memory_bus.copy_from_binary(rom_binary);
     }
 
-    pub fn get_screen_buffer(&mut self) -> [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT] {
+    pub fn get_screen_buffer(&mut self) -> [[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT] {
         self.ppu.get_screen_buffer(&mut self.memory_bus)
     }
 

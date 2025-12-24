@@ -4,16 +4,25 @@ pub const MEMORY_SIZE: usize = 0x10000; // 65536 in decimal which is 64KB
 /// The initial value of the Program Counter (PC) at CPU start-up.
 pub const INITIAL_PC: u16 = 0x0100;
 
-/// Screen width in pixels.
-pub const SCREEN_WIDTH: usize = 160;
+/// Screen width of the Game Section in the overall emulator screen in pixels.
+pub const GAME_SECTION_WIDTH: usize = 160;
 
-/// Screen height in pixels.
-pub const SCREEN_HEIGHT: usize = 144;
+/// Screen height of the Game Section in the overall emulator screen in pixels.
+pub const GAME_SECTION_HEIGHT: usize = 144;
+
+/// Size of each tile in pixels (8x8).
+pub const TILE_SIZE: usize = 8; // 8x8 pixels per tile
+
+/// Scale factor for rendering the Game Section and tiles on the emulator screen. This helps to enlarge the display for better visibility.
+pub const SCREEN_SCALE: usize = 3;
 
 /// The size of the map used for background and window rendering in pixels (256x256).
 pub const BG_AND_WINDOW_MAP_SCREEN_SIZE: usize = 256;
 /// Number of tiles per row and column in the background and window tile map (32x32).
 pub const BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL: usize = 32;
+
+/// Game Boy color palette: 0=white, 1=light gray, 2=dark gray, 3=black
+pub const COLORS: [u32; 4] = [0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000];
 
 /// Start address for load instructions involving I/O ports.
 pub const START_ADDRESS_FOR_LOAD_INSTRUCTIONS: u16 = 0xFF00;
