@@ -25,19 +25,20 @@ pub(crate) const TOTAL_WINDOW_HEIGHT: usize = TILE_DATA_HEIGHT;
 
 pub struct Screen {
     pub window: Window,
-    pub buffer: [[u32; TOTAL_WINDOW_WIDTH]; TOTAL_WINDOW_HEIGHT],
+    pub buffer: Box<[[u32; TOTAL_WINDOW_WIDTH]; TOTAL_WINDOW_HEIGHT]>,
 }
 
 impl Screen {
-    pub fn new(title: &str) -> Result<Self, minifb::Error> {
-        let window = Self::create_screen(title)?;
+    pub fn new(title: String) -> Result<Screen, minifb::Error> {
+        let window: Window = Self::create_screen(title)?;
 
         Ok(Self {
             window,
-            buffer: [[0; TOTAL_WINDOW_WIDTH]; TOTAL_WINDOW_HEIGHT],
+            buffer: Box::new([[0x000080; TOTAL_WINDOW_WIDTH]; TOTAL_WINDOW_HEIGHT]),
         })
     }
 
+    /// Updates the minifb window with the current buffer content.
     pub fn update_window_with_buffer(&mut self) {
         let buffer: Vec<u32> = self.parse_2d_vector_to_1d();
         self.window
@@ -46,24 +47,18 @@ impl Screen {
     }
 
     /// Render the current Game to the screen buffer with scaling applied.
-    pub(crate) fn render_game_to_screen_buffer(cpu: &gameboy_core::cpu::Cpu, buffer: &mut [u32]) {
-        const BUFFER_WIDTH: usize = GAME_SECTION_WIDTH * SCREEN_SCALE;
-
+    pub fn render_game_to_screen_buffer(&mut self, cpu: &gameboy_core::cpu::Cpu) {
+        println!("LCDC Register {:0b}", cpu.memory_bus.get_lcdc_register());
         for row in 0..GAME_SECTION_HEIGHT {
             for col in 0..GAME_SECTION_WIDTH {
-                let pixel_value = cpu.ppu.screen[row][col];
-                // let color = COLORS[pixel_value as usize];
-                let color = 0x006400;
-
                 // Apply scaling
                 for scale_row in 0..SCREEN_SCALE {
                     for scale_col in 0..SCREEN_SCALE {
                         let buffer_row = row * SCREEN_SCALE + scale_row;
                         let buffer_col = col * SCREEN_SCALE + scale_col;
-                        let buffer_idx = buffer_row * BUFFER_WIDTH + buffer_col;
 
-                        if buffer_idx < buffer.len() {
-                            buffer[buffer_idx] = color;
+                        if buffer_row < TOTAL_WINDOW_HEIGHT && buffer_col < TOTAL_WINDOW_WIDTH {
+                            self.buffer[buffer_row][buffer_col] = cpu.ppu.screen[row][col];
                         }
                     }
                 }
@@ -76,10 +71,7 @@ impl Screen {
     /// Renders tile data to the screen buffer for visualization and debugging purposes.
     /// Takes all 384 tiles from memory and arranges them in a grid (16 tiles wide × 24 tiles tall).
     /// Each tile is 8×8 pixels and rendered with the Game Boy color palette.
-    pub(crate) fn render_tile_data_to_screen_buffer(
-        cpu: &gameboy_core::cpu::Cpu,
-        buffer: &mut [u32],
-    ) {
+    pub fn render_tile_data_to_screen_buffer(&mut self, cpu: &gameboy_core::cpu::Cpu) {
         let tiles: [Tile; 384] = cpu.ppu.get_tiles_data(&cpu.memory_bus);
 
         // Starting position for tile data (next to the game screen with margin)
@@ -111,10 +103,9 @@ impl Screen {
                                 + screen_col * SCREEN_SCALE
                                 + tile_col * SCREEN_SCALE
                                 + scale_col;
-                            let buffer_idx = buffer_row * TOTAL_WINDOW_WIDTH + buffer_col;
 
-                            if buffer_idx < buffer.len() {
-                                buffer[buffer_idx] = color;
+                            if buffer_row < TOTAL_WINDOW_HEIGHT && buffer_col < TOTAL_WINDOW_WIDTH {
+                                self.buffer[buffer_row][buffer_col] = color;
                             }
                         }
                     }
@@ -133,7 +124,7 @@ impl Screen {
     }
 
     /// Creates a new window for the Gameboy emulator screen using minifb.
-    fn create_screen(title: &str) -> Result<Window, minifb::Error> {
+    fn create_screen(title: String) -> Result<Window, minifb::Error> {
         Window::new(
             &title,
             TOTAL_WINDOW_WIDTH,

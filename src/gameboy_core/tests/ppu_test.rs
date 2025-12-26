@@ -195,7 +195,7 @@ mod tests {
         assert_eq!(cpu.memory_bus.read_byte(start_pos + 14), 6); // O
 
         // Get screen buffer and render it
-        let tiles = cpu.ppu.read_tiles(&cpu.memory_bus);
+        let tiles = cpu.ppu.get_tiles(&cpu.memory_bus);
         let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(&cpu.memory_bus);
         let bg_screen_buffer = cpu.ppu.get_bg_buffer(&cpu.memory_bus, &tiles, &lcdc_register);
         render_bg_screen_with_minifb(&bg_screen_buffer);

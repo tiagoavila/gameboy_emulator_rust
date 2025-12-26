@@ -28,6 +28,7 @@ pub struct LcdcRegister {
     /// Setting it to 0 turns both off, which grants immediate and full access to VRAM, OAM, etc.
     pub lcd_ppu_enabled: bool,
 
+    /// 0 = 9800–9BFF; 1 = 9C00–9FFF
     /// This bit controls which background map the Window uses for rendering.
     /// When it’s clear (0), the $9800 tilemap is used, otherwise it’s the $9C00 one.
     pub window_tile_map_area: bool,
@@ -35,10 +36,12 @@ pub struct LcdcRegister {
     /// This bit controls whether the window shall be displayed or not. This bit is overridden on DMG by bit 0 if that bit is clear.
     pub window_enable: bool,
     
+    /// 0 = 8800–97FF; 1 = 8000–8FFF 
     /// This bit controls which addressing mode the BG and Window use to pick tiles. 
     /// Objects (sprites) aren’t affected by this, and will always use the $8000 addressing mode.
-    pub bg_window_tiles: bool,
+    pub bg_window_tile_data_area: bool,
 
+    /// 0 = 9800–9BFF; 1 = 9C00–9FFF 
     /// This bit works similarly to window_tile_map_area: if the bit is clear (0),
     ///  the BG uses tilemap from $9800 to $9BFF, otherwise tilemap $9C00 to $9FFF.
     pub bg_tile_map_area: bool,
@@ -68,7 +71,7 @@ impl LcdcRegister {
             lcd_ppu_enabled: (lcdc_value & 0b1000_0000) != 0,
             window_tile_map_area: (lcdc_value & 0b0100_0000) != 0,
             window_enable: (lcdc_value & 0b0010_0000) != 0,
-            bg_window_tiles: (lcdc_value & 0b0001_0000) != 0,
+            bg_window_tile_data_area: (lcdc_value & 0b0001_0000) != 0,
             bg_tile_map_area: (lcdc_value & 0b0000_1000) != 0,
             obj_size: (lcdc_value & 0b0000_0100) != 0,
             obj_enable: (lcdc_value & 0b0000_0010) != 0,
@@ -79,7 +82,7 @@ impl LcdcRegister {
     /// When bg_window_tiles is true, returns the address range from 0x8000 to 0x8FFF.
     /// When false, returns the address range from 0x8800 to 0x97FF.
     pub fn get_bg_window_tiles_area_address_range(&self) -> (u16, u16) {
-        if self.bg_window_tiles {
+        if self.bg_window_tile_data_area {
             return (BG_WINDOW_DATA_AREA_0_START, BG_WINDOW_DATA_AREA_0_END);
         }
         

@@ -9,7 +9,6 @@ use minifb::{Key, Window};
 pub mod gameboy_core;
 
 fn main() {
-    // let rom_file = "games/Tetris.gb";
     let rom_file = "games/Super Mario Land.gb";
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();
 
@@ -18,7 +17,7 @@ fn main() {
 
     if debug_mode {
         // clear previous logs
-        cpu_utils::clear_logs().unwrap();
+        cpu_utils::clear_logs().unwrap(); 
         cpu_utils::clear_dr_gameboy_log().unwrap();
     }
 
@@ -83,12 +82,10 @@ fn render_tile_to_buffer(tile: &Tile, buffer: &mut [u32], start_row: usize, star
 }
 
 fn run_gameboy(cpu: &mut gameboy_core::cpu::Cpu) {
-    let mut screen = Screen::new("Gameboy Emulator")
+    let mut screen = Screen::new("Gameboy Emulator".to_string())
         .unwrap_or_else(|e| {
             panic!("{}", e);
         });
-
-    let mut buffer: Vec<u32> = vec![0x000080; TOTAL_WINDOW_WIDTH * TOTAL_WINDOW_HEIGHT];
 
     cpu.set_debug_mode(true);
 
@@ -99,12 +96,10 @@ fn run_gameboy(cpu: &mut gameboy_core::cpu::Cpu) {
 
         cpu.ppu.update_screen_buffer(&cpu.memory_bus);
 
-        Screen::render_tile_data_to_screen_buffer(cpu, &mut buffer);
-        Screen::render_game_to_screen_buffer(cpu, &mut buffer);
+        screen.render_tile_data_to_screen_buffer(cpu);
+        screen.render_game_to_screen_buffer(cpu);
 
-        screen.window
-            .update_with_buffer(&buffer, TOTAL_WINDOW_WIDTH, TOTAL_WINDOW_HEIGHT)
-            .unwrap();
+        screen.update_window_with_buffer();
     }
 }
 

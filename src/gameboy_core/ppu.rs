@@ -1,11 +1,11 @@
 use crate::gameboy_core::{
-    constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH},
+    constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL, COLORS, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH},
     cpu_components,
     ppu_components::{self, Tile, TilePixelValue},
 };
 
 pub struct Ppu {
-    pub screen: [[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT], // 144 rows of 160 pixels
+    pub screen: [[u32; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT], // 144 rows of 160 pixels
 }
 
 impl Ppu {
@@ -15,15 +15,42 @@ impl Ppu {
         }
     }
     
-    pub fn update_screen_buffer(&mut self, memory_bus: &cpu_components::MemoryBus) {
-        self.screen = self.get_screen_buffer(memory_bus);
-    }
-
     /// Generates the screen buffer representing the visible 160x144 pixel screen.
     /// This will build the Background first, then apply the Window (if enabled), and finally render the Objects - Sprites (if enabled).
-    pub fn get_screen_buffer(&self, memory_bus: &cpu_components::MemoryBus) -> [[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT] {
-        let tiles = self.read_tiles(memory_bus);
+    pub fn update_screen_buffer(&mut self, memory_bus: &cpu_components::MemoryBus) {
+        self.screen = self.get_bg_screen_buffer_as_colors(memory_bus);
+    }
+    
+    /// Generates the background screen buffer representing the visible 160x144 pixel screen in color values.
+    /// Where the color is an u32 representing the RGB value.
+    pub fn get_bg_screen_buffer_as_colors(&self, memory_bus: &cpu_components::MemoryBus) -> [[u32; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT] {
         let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(memory_bus);
+
+        // When Bit 0 is cleared, both background and window become blank (white), and the Window Display Bit is ignored in that case.
+        // Only objects may still be displayed (if enabled in Bit 1).
+        if lcdc_register.bg_window_enable == false {
+            return [[0xFFFFFF; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT];
+        }
+
+        let bg_screen_buffer = self.get_bg_screen_buffer(memory_bus);
+        let mut color_screen_buffer = [[0u32; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT];
+
+        for row in 0..GAME_SECTION_HEIGHT {
+            for col in 0..GAME_SECTION_WIDTH {
+                let pixel_value = bg_screen_buffer[row][col];
+                let color = COLORS[pixel_value as usize];
+                color_screen_buffer[row][col] = color;
+            }
+        }
+
+        color_screen_buffer
+    }
+
+    /// Generates the background screen buffer representing the visible 160x144 pixel screen.
+    /// This will build the Background only returning it in a color pallete value only.
+    pub fn get_bg_screen_buffer(&self, memory_bus: &cpu_components::MemoryBus) -> [[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT] {
+        let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(memory_bus);
+        let tiles = self.get_tiles(memory_bus);
 
         //bg setup
         let bg_buffer = self.get_bg_buffer(memory_bus, &tiles, &lcdc_register);
@@ -32,8 +59,10 @@ impl Ppu {
         screen_buffer
     }
     
+    /// Returns the entire set of Tiles from VRAM.
+    /// Tiles are used to build the background, window, and objects (sprites).
     pub fn get_tiles_data(&self, memory_bus: &cpu_components::MemoryBus) -> [Tile; 384] {
-        self.read_tiles(memory_bus)
+        self.get_tiles(memory_bus)
     }
     
     /// Returns the visible portion of the background buffer based on the SCX and SCY scroll values and to fit the 160x144 screen.
@@ -62,11 +91,12 @@ impl Ppu {
     pub fn get_bg_buffer(&self, memory_bus: &cpu_components::MemoryBus, tiles: &[Tile; 384], lcdc_register: &ppu_components::LcdcRegister) -> [[u8; BG_AND_WINDOW_MAP_SCREEN_SIZE]; BG_AND_WINDOW_MAP_SCREEN_SIZE] {
         let bg_tile_map = self.get_bg_tile_map_as_grid_32x32(memory_bus, &lcdc_register);
         let mut bg_buffer = [[0u8; BG_AND_WINDOW_MAP_SCREEN_SIZE]; BG_AND_WINDOW_MAP_SCREEN_SIZE];
+        let bg_tiles = self.get_bg_and_window_tiles(tiles, &lcdc_register);
     
         for tile_map_row in 0..BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL {
             for tile_map_col in 0..BG_AND_WINDOW_TILE_COUNT_PER_ROW_COL {
                 let tile_index = bg_tile_map[tile_map_row][tile_map_col] as usize;
-                let tile = &tiles[tile_index];
+                let tile = &bg_tiles[tile_index];
     
                 for tile_row in 0..8 {
                     for tile_col in 0..8 {
@@ -90,7 +120,7 @@ impl Ppu {
     /// A tile (or character) has 8×8 pixels and has a color depth of 2 bits per pixel,
     /// allowing each pixel to use one of 4 colors or gray shades.
     /// Tiles can be displayed as part of the Background/Window maps, and/or as objects (movable sprites).
-    pub fn read_tiles(&self, memory_bus: &cpu_components::MemoryBus) -> [Tile; 384] {
+    pub fn get_tiles(&self, memory_bus: &cpu_components::MemoryBus) -> [Tile; 384] {
         let mut tiles: [Tile; 384] = [Tile::new(); 384];
         // Tile data is stored in VRAM in the memory area at $8000-$97FF;
         // Each tile is 16 bytes (2 bytes per row, 8 rows)
@@ -144,6 +174,20 @@ impl Ppu {
         // }
 
         tiles
+    }
+    
+    /// Get the Tiles used for Background and Window based on the LCDC register settings.
+    /// If the bg_window_tile_data_area (bit 4 in LCDC) is set to 1, it uses the tile data from $8000-$8FFF (tiles 0-255).
+    /// If it is set to 0, it uses the tile data from $8800-$97FF, with tiles from index 0-127 in range $9000-$97FF 
+    /// and tiles from index 128-255 in range $8800-$8FFF.
+    fn get_bg_and_window_tiles(&self, tiles: &[Tile; 384], lcdc: &ppu_components::LcdcRegister) -> [Tile; 256] {
+        if lcdc.bg_window_tile_data_area {
+            tiles[0..256].try_into().unwrap()
+        } else {
+            let block2: [Tile; 128] = tiles[256..].try_into().unwrap();
+            let block1: [Tile; 128]  = tiles[128..256].try_into().unwrap(); // End index of a slice is exclusive
+            return [block2, block1].concat().try_into().unwrap();
+        }
     }
 
     /// Converts the background tile map from a flat vector to a 32x32 grid.

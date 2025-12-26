@@ -430,7 +430,7 @@ impl Cpu {
     }
 
     pub fn get_screen_buffer(&mut self) -> [[u8; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT] {
-        self.ppu.get_screen_buffer(&mut self.memory_bus)
+        self.ppu.get_bg_screen_buffer(&mut self.memory_bus)
     }
 
     pub(crate) fn set_debug_mode(&mut self, value: bool) {
