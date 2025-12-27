@@ -1,7 +1,8 @@
 use crate::gameboy_core::{
-    constants::{
-        BGP, INITIAL_PC, LCDC, LY, MEMORY_SIZE, SCX, SCY
-    }, interrupts::InterruptType, ppu_components::LcdcRegister, registers_contants
+    constants::{INITIAL_PC, MEMORY_SIZE},
+    interrupts::InterruptType,
+    ppu_components::LcdcRegister,
+    registers_contants::{self, BGP, LCDC, SCX, SCY},
 };
 
 pub struct CpuRegisters {
@@ -17,7 +18,7 @@ pub struct CpuRegisters {
     pub flags: FlagsRegister,
 }
 
-/// Represents the CPU Flags Register, they are stored here as individual boolean fields but in actual hardware 
+/// Represents the CPU Flags Register, they are stored here as individual boolean fields but in actual hardware
 /// they are packed into a single byte where each bit represents a different flag.
 /// Bit 7: Z (Zero flag)
 /// Bit 6: N (Subtraction flag)
@@ -132,7 +133,7 @@ impl CpuRegisters {
         let (new_hl, _overflowed) = hl.overflowing_sub(1);
         self.set_hl(new_hl);
     }
-    
+
     pub fn set_af(&mut self, value: u16) {
         self.a = (value >> 8) as u8;
         self.flags.set_flags_from_u8((value & 0b011111111) as u8);
@@ -161,6 +162,8 @@ impl CpuRegisters {
 }
 
 impl FlagsRegister {
+    /// Initializes the FlagsRegister with default values.
+    /// Based on documentation on GameBoy CPU Manual (CBCPUman.pdf) where F is set to 0xB0, the initial state is Z=1, N=0, H=1, C=1
     pub fn new() -> Self {
         Self {
             z: true,
@@ -203,7 +206,7 @@ impl FlagsRegister {
     pub fn calculate_h_flag_on_sub(value1: u8, value2: u8) -> bool {
         (value1 & 0x0F) < (value2 & 0x0F)
     }
-    
+
     /// Sets the z_flag to the provided boolean value
     pub fn set_z_flag(&mut self, z_flag: bool) {
         self.z = z_flag;
@@ -218,7 +221,7 @@ impl FlagsRegister {
     pub fn set_z_flag_from_u16(&mut self, result: u16) {
         self.z = result == 0;
     }
-    
+
     pub(crate) fn set_n_flag(&mut self, value: bool) {
         self.n = value;
     }
@@ -240,7 +243,7 @@ impl FlagsRegister {
     /// Bits 3-0: Always 0
     pub fn get_flags_as_u8(&self) -> u8 {
         let mut value = 0u8;
-        
+
         if self.z {
             value |= 0b10000000; // Set bit 7
         }
@@ -253,10 +256,10 @@ impl FlagsRegister {
         if self.c {
             value |= 0b00010000; // Set bit 4
         }
-        
+
         value
     }
-    
+
     pub(crate) fn set_flags_from_u8(&mut self, value: u8) {
         self.z = (value & 0b10000000) != 0;
         self.n = (value & 0b01000000) != 0;
@@ -347,25 +350,25 @@ impl MemoryBus {
     pub(crate) fn get_div_register(&self) -> u8 {
         self.read_byte(registers_contants::DIV)
     }
-    
+
     /// Get the TMA register value, that is located at address 0xFF06
     /// Timer Modulo (TMA) - when TIMA overflows (from 0xFF to 0x00), it is reloaded with the value in TMA.
     pub(crate) fn get_tma_register(&self) -> u8 {
         self.read_byte(registers_contants::TMA)
     }
-    
+
     /// Get the TAC register value, that is located at address 0xFF07
     /// Timer Control (TAC) - controls the timer's operation, including its speed and whether it is enabled.
     pub(crate) fn get_tac_register(&self) -> u8 {
         self.read_byte(registers_contants::TAC)
     }
-    
+
     /// Get the TIMA register value, that is located at address 0xFF05
     /// Timer Counter (TIMA) - increments at a rate determined by the TAC register.
     pub(crate) fn get_tima_register(&self) -> u8 {
         self.read_byte(registers_contants::TIMA)
     }
-    
+
     pub(crate) fn set_div_register(&mut self, value: u8) {
         self.write_byte(registers_contants::DIV, value);
     }
@@ -373,10 +376,14 @@ impl MemoryBus {
     pub(crate) fn set_tima_register(&mut self, value: u8) {
         self.write_byte(registers_contants::TIMA, value);
     }
-    
+
     /// Sets or clears the timer interrupt flag in the IF register.
     /// The IF register controls which interrupts are being requested.
-    pub(crate) fn update_timer_flag_in_if_register(&mut self, interrupt_type: InterruptType, value: bool) {
+    pub(crate) fn update_timer_flag_in_if_register(
+        &mut self,
+        interrupt_type: InterruptType,
+        value: bool,
+    ) {
         let mut if_register = self.read_byte(registers_contants::IF);
         if value {
             match interrupt_type {
@@ -384,7 +391,7 @@ impl MemoryBus {
                 InterruptType::LCD => if_register |= 0b00000010, // Set bit 1 to request LCD STAT interrupt
                 InterruptType::Timer => if_register |= 0b00000100, // Set bit 2 to request Timer interrupt
                 InterruptType::Serial => if_register |= 0b00001000, // Set bit 3 to request Serial interrupt
-                InterruptType::Joypad => if_register |= 0b00010000, // Set bit 4 to request Joypad interrupt 
+                InterruptType::Joypad => if_register |= 0b00010000, // Set bit 4 to request Joypad interrupt
             }
         } else {
             match interrupt_type {

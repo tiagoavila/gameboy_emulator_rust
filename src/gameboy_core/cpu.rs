@@ -1,5 +1,25 @@
 use crate::gameboy_core::{
-    constants::{EIGHT_BIT_REGISTERS, INTERRUPTS_HANDLERS_ADDRESSES, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH, SIXTEEN_BIT_REGISTERS}, cpu_components::{CpuRegisters, MemoryBus}, cpu_instructions::{cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions, cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions, cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions, cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions, cpu_bit_operations_instructions::CpuBitOperationsInstructions, cpu_call_and_return_instructions::CpuCallAndReturnInstructions, cpu_jump_instructions::CpuJumpInstructions, cpu_miscellaneous_instructions::CpuMiscellaneousInstructions, cpu_rotate_shift_instructions::CpuRotateShiftInstructions}, cpu_utils, interrupts::InterruptsHandler, ppu::Ppu, timer::Timer
+    constants::{
+        EIGHT_BIT_REGISTERS, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH,
+        INTERRUPTS_HANDLERS_ADDRESSES, SIXTEEN_BIT_REGISTERS,
+    },
+    cpu_components::{CpuRegisters, MemoryBus},
+    cpu_instructions::{
+        cpu_8bit_arithmetic_logical_instructions::Cpu8BitArithmeticLogicalInstructions,
+        cpu_8bit_transfer_input_output_instructions::Cpu8BitTransferInputOutputInstructions,
+        cpu_16bit_arithmetic_instructions::Cpu16BitArithmeticInstructions,
+        cpu_16bit_transfer_instructions::Cpu16BitTransferInstructions,
+        cpu_bit_operations_instructions::CpuBitOperationsInstructions,
+        cpu_call_and_return_instructions::CpuCallAndReturnInstructions,
+        cpu_jump_instructions::CpuJumpInstructions,
+        cpu_miscellaneous_instructions::CpuMiscellaneousInstructions,
+        cpu_rotate_shift_instructions::CpuRotateShiftInstructions,
+    },
+    cpu_utils,
+    interrupts::InterruptsHandler,
+    ppu::Ppu,
+    registers_contants::{*},
+    timer::Timer,
 };
 
 pub struct Cpu {
@@ -7,7 +27,7 @@ pub struct Cpu {
     pub memory_bus: MemoryBus,
     pub is_debug_mode: bool,
     pub ppu: Ppu,
-    /// Total number of clock cycles since the CPU started. This value is related to the Master Clock (M) cycles. 
+    /// Total number of clock cycles since the CPU started. This value is related to the Master Clock (M) cycles.
     /// Which has a frequency of 4,194,304 Hz.
     pub clock_cycles: u64,
     pub ime: bool,
@@ -20,8 +40,9 @@ pub struct Cpu {
 }
 
 impl Cpu {
+    /// Creates a new instance of the CPU with default values in the registers.
     pub fn new() -> Self {
-        let mut cpu = Self {
+        Self {
             registers: CpuRegisters::new(),
             memory_bus: MemoryBus::new(),
             is_debug_mode: false,
@@ -32,19 +53,58 @@ impl Cpu {
             executed_instructions_count: 0,
             ppu: Ppu::new(),
             timer: Timer::new(),
-            interrupts_handler: InterruptsHandler{},
-            is_halt_mode: false
-        };
-        cpu.initialize_memory_registers();
-
-        cpu
+            interrupts_handler: InterruptsHandler {},
+            is_halt_mode: false,
+        }
     }
 
     /// Initialize the Registers stored in RAM to default values as per Gameboy hardware specs.
     pub fn initialize_memory_registers(&mut self) {
+        self.memory_bus.write_byte(P1, 0xCF);
+        self.memory_bus.write_byte(SB, 0x00);
+        self.memory_bus.write_byte(SC, 0x7E);
+        self.memory_bus.write_byte(DIV, 0xAB);
+        self.memory_bus.write_byte(TIMA, 0x00);
+        self.memory_bus.write_byte(TMA, 0x00);
+        self.memory_bus.write_byte(TAC, 0xF8);
+        self.memory_bus.write_byte(IF, 0xE1);
+        self.memory_bus.write_byte(NR10, 0x80);
+        self.memory_bus.write_byte(NR11, 0xBF);
+        self.memory_bus.write_byte(NR12, 0xF3);
+        self.memory_bus.write_byte(NR13, 0xFF);
+        self.memory_bus.write_byte(NR14, 0xBF);
+        self.memory_bus.write_byte(NR21, 0x3F);
+        self.memory_bus.write_byte(NR22, 0x00);
+        self.memory_bus.write_byte(NR23, 0xFF);
+        self.memory_bus.write_byte(NR24, 0xBF);
+        self.memory_bus.write_byte(NR30, 0x7F);
+        self.memory_bus.write_byte(NR31, 0xFF);
+        self.memory_bus.write_byte(NR32, 0x9F);
+        self.memory_bus.write_byte(NR33, 0xFF);
+        self.memory_bus.write_byte(NR34, 0xBF);
+        self.memory_bus.write_byte(NR41, 0xFF);
+        self.memory_bus.write_byte(NR42, 0x00);
+        self.memory_bus.write_byte(NR43, 0x00);
+        self.memory_bus.write_byte(NR44, 0xBF);
+        self.memory_bus.write_byte(NR50, 0x77);
+        self.memory_bus.write_byte(NR51, 0xF3);
+        self.memory_bus.write_byte(NR52, 0xF1);
+
         // Initialize LCDC register to enable LCD and set background tile map area to 0x9800-0x9BFF
         self.memory_bus.set_lcdc_register(0x91); // 10010001: LCD enabled, BG enabled, Tile data area at 0x8000, BG tile map area at 0x9800
-        self.memory_bus.set_bgp_register(0xFC); // Set BGP register to a default value
+
+        self.memory_bus.write_byte(STAT, 0x85);
+        self.memory_bus.set_scy_register(0x00);
+        self.memory_bus.set_scx_register(0x00);
+        self.memory_bus.write_byte(LY, 0x00);
+        self.memory_bus.write_byte(LYC, 0x00);
+        self.memory_bus.write_byte(DMA, 0xFF);
+        self.memory_bus.set_bgp_register(0xFC);
+        self.memory_bus.write_byte(OBP0, 0xFF);
+        self.memory_bus.write_byte(OBP1, 0xFF);
+        self.memory_bus.write_byte(WY, 0x00);
+        self.memory_bus.write_byte(WX, 0x00);
+        self.memory_bus.write_byte(IE, 0x00);
 
         // Other registers can be initialized here as needed
     }
@@ -53,6 +113,8 @@ impl Cpu {
     pub fn start(rom_binary: Vec<u8>, is_debug_mode: bool) -> Self {
         let mut cpu = Self::new();
         cpu.load_rom(rom_binary);
+        cpu.initialize_memory_registers();
+        println!("LCDC Register {:0b}", cpu.memory_bus.get_lcdc_register());
         cpu.is_debug_mode = is_debug_mode;
         return cpu;
     }
@@ -66,7 +128,7 @@ impl Cpu {
         // For whateve reason Dr Game boy doensn´t log interrupts handlers addresses, this is just to match their logs
         if !INTERRUPTS_HANDLERS_ADDRESSES.contains(&self.registers.pc) {
             cpu_utils::log(self, opcode).unwrap();
-        } 
+        }
 
         let interrupt_triggered = self.handle_interrupts();
         if interrupt_triggered {
@@ -110,8 +172,8 @@ impl Cpu {
     pub fn execute(&mut self, opcode: u8) {
         match opcode {
             0x00 | 0xE3 | 0xED => self.nop(), // NOP
-            0x10 => self.stop(),       // STOP
-            0x76 => self.halt(),        // HALT
+            0x10 => self.stop(),              // STOP
+            0x76 => self.halt(),              // HALT
 
             // 8-Bit Transfer and Input/Output Instructions
             v if (v & 0b11000111) == 0b01000110 && Cpu::destination_is_8bit_register(opcode) => {
@@ -301,21 +363,15 @@ impl Cpu {
             v if (v & 0b11000000) == 0b01000000 && Cpu::source_is_8bit_register(cb_opcode) => {
                 self.bit_b_r8(cb_opcode)
             }
-            v if (v & 0b11000111) == 0b01000110 => {
-                self.bit_b_hl(cb_opcode)
-            }
+            v if (v & 0b11000111) == 0b01000110 => self.bit_b_hl(cb_opcode),
             v if (v & 0b11000000) == 0b11000000 && Cpu::source_is_8bit_register(cb_opcode) => {
                 self.set_b_r8(cb_opcode)
             }
-            v if (v & 0b11000111) == 0b11000110 => {
-                self.set_b_hl(cb_opcode)
-            }
+            v if (v & 0b11000111) == 0b11000110 => self.set_b_hl(cb_opcode),
             v if (v & 0b11000000) == 0b10000000 && Cpu::source_is_8bit_register(cb_opcode) => {
                 self.reset_b_r8(cb_opcode)
             }
-            v if (v & 0b11000111) == 0b10000110 => {
-                self.reset_b_hl(cb_opcode)
-            }
+            v if (v & 0b11000111) == 0b10000110 => self.reset_b_hl(cb_opcode),
             _ => {
                 println!(
                     "*** Unimplemented CB prefix opcode: 0x{:02X} - bin: 0b{:08b} ***",
@@ -458,7 +514,7 @@ impl Cpu {
     pub(crate) fn set_ime(&mut self, value: bool) {
         self.ime = value;
     }
-    
+
     /// Increment clock cycles by 4 and update timers
     pub(crate) fn increment_4_cycles_and_update_timers(&mut self) {
         self.increment_cycles(4);
@@ -473,12 +529,12 @@ impl Cpu {
     pub fn update_screen(&mut self) {
         self.ppu.update_screen_buffer(&self.memory_bus);
     }
-    
+
     /// Update the timers after every instruction execution
     pub fn update_timers(&mut self) {
         Timer::update(self);
     }
-    
+
     /// Handle interrupts if any are requested
     pub fn handle_interrupts(&mut self) -> bool {
         InterruptsHandler::handle(self)

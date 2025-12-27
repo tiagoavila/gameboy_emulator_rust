@@ -70,27 +70,6 @@ pub const TILE_MAP_AREA_0_END: u16 = 0x9BFF;
 pub const TILE_MAP_AREA_1_START: u16 = 0x9C00;
 pub const TILE_MAP_AREA_1_END: u16 = 0x9FFF;
 
-/// LCDC is the main LCD Control register. Its bits toggle what elements are displayed on the screen, and how.
-pub const LCDC: u16 = 0xFF40; 
-
-///This register assigns gray shades to the color indices of the BG and Window tiles. 
-pub const BGP: u16 = 0xFF47; 
-
-/// SCY specifies the vertical scroll position of the background.
-/// The value ranges from 0 to 255, where 0 means no vertical scrolling,
-/// and 255 means the background is scrolled up by 255 pixels.
-pub const SCY: u16 = 0xFF42;
-
-/// SCX specifies the horizontal scroll position of the background.
-/// The value ranges from 0 to 255, where 0 means no horizontal scrolling,
-/// and 255 means the background is scrolled left by 255 pixels.
-pub const SCX: u16 = 0xFF43;
-
-/// LY indicates the current horizontal line, which might be about to be drawn, being drawn, or just been drawn.
-/// LY can hold any value from 0 to 153, with values from 144 to 153 indicating the VBlank period. 
-pub const LY: u16 = 0xFF44;
-
-
 /// The address of the interrupt handlers.
 pub const VBLANK_INTERRUT_HANDLER_ADDRESS: u16 = 0x40;
 pub const LCD_STAT_INTERRUPT_HANDLER_ADDRESS: u16 = 0x48;

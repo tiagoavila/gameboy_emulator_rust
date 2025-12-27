@@ -1,6 +1,5 @@
 use crate::gameboy_core::{
-    cpu::Cpu,
-    constants::{BGP, LCDC, TILE_DATA_START, TILE_MAP_AREA_0_START},
+    constants::{TILE_DATA_START, TILE_MAP_AREA_0_START}, cpu::Cpu, registers_contants::{BGP, LCDC}
 };
 
 // Simple 8x8 font tiles for letters N, I, T, E, N, D, O
@@ -166,7 +165,7 @@ pub fn setup_nintendo_display(cpu: &mut Cpu) {
 
 #[cfg(test)]
 mod tests {
-    use crate::gameboy_core::{constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, BGP, LCDC, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH, TILE_MAP_AREA_0_START}, ppu_components};
+    use crate::gameboy_core::{constants::{BG_AND_WINDOW_MAP_SCREEN_SIZE, GAME_SECTION_HEIGHT, GAME_SECTION_WIDTH, TILE_MAP_AREA_0_START}, ppu_components, registers_contants::{BGP, LCDC}};
     use minifb::{Key, Window, WindowOptions};
 
     #[test]

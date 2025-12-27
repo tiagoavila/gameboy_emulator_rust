@@ -100,7 +100,7 @@ impl Ppu {
     
                 for tile_row in 0..8 {
                     for tile_col in 0..8 {
-                        let pixel_value = match tile.pixels[tile_row][tile_col] {
+                        let color_pallete_value = match tile.pixels[tile_row][tile_col] {
                             TilePixelValue::Zero => 0,
                             TilePixelValue::One => 1,
                             TilePixelValue::Two => 2,
@@ -108,7 +108,7 @@ impl Ppu {
                         };
                         let buffer_row = tile_map_row * 8 + tile_row;
                         let buffer_col = tile_map_col * 8 + tile_col;
-                        bg_buffer[buffer_row][buffer_col] = pixel_value;
+                        bg_buffer[buffer_row][buffer_col] = color_pallete_value;
                     }
                 }
             }
