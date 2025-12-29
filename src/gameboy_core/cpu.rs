@@ -89,10 +89,7 @@ impl Cpu {
         self.memory_bus.write_byte(NR50, 0x77);
         self.memory_bus.write_byte(NR51, 0xF3);
         self.memory_bus.write_byte(NR52, 0xF1);
-
-        // Initialize LCDC register to enable LCD and set background tile map area to 0x9800-0x9BFF
         self.memory_bus.set_lcdc_register(0x91); // 10010001: LCD enabled, BG enabled, Tile data area at 0x8000, BG tile map area at 0x9800
-
         self.memory_bus.write_byte(STAT, 0x85);
         self.memory_bus.set_scy_register(0x00);
         self.memory_bus.set_scx_register(0x00);
@@ -140,7 +137,7 @@ impl Cpu {
             self.execute(opcode);
         } else {
             // When in halt mode the CPU still consumes cycles
-            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_update_timers_and_ppu();
         }
 
         self.enable_ime_if_ei_instruction_pending(opcode);
@@ -516,9 +513,10 @@ impl Cpu {
     }
 
     /// Increment clock cycles by 4 and update timers
-    pub(crate) fn increment_4_cycles_and_update_timers(&mut self) {
+    pub(crate) fn increment_4_cycles_update_timers_and_ppu(&mut self) {
         self.increment_cycles(4);
         self.update_timers();
+        self.update_ppu();
     }
 
     fn increment_cycles(&mut self, value: u8) {
@@ -538,5 +536,10 @@ impl Cpu {
     /// Handle interrupts if any are requested
     pub fn handle_interrupts(&mut self) -> bool {
         InterruptsHandler::handle(self)
+    }
+    
+    /// Update the PPU state after every instruction execution
+    pub fn update_ppu(&mut self) {
+        Ppu::update_state(self);
     }
 }

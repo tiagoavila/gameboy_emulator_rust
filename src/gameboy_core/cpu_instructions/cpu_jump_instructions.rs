@@ -12,12 +12,12 @@ pub trait CpuJumpInstructions {
 impl CpuJumpInstructions for Cpu {
     /// Loads the 16-bit immediate value to the program counter (PC).
     fn jp_imm16(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let imm16 = self.get_imm16();
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.registers.pc = imm16;
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Loads operand nn in the PC if condition cc and the flag status match.
@@ -28,10 +28,10 @@ impl CpuJumpInstructions for Cpu {
         if self.check_cc_condition(opcode) {
             self.jp_imm16();
         } else {
-            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_update_timers_and_ppu();
             self.registers.increment_pc_twice();
-            self.increment_4_cycles_and_update_timers();
-            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_update_timers_and_ppu();
+            self.increment_4_cycles_update_timers_and_ppu();
         }
     }
 
@@ -42,17 +42,17 @@ impl CpuJumpInstructions for Cpu {
     /// Example: 0xF6 as u8 = 246
     ///          0xF6 as i8 = -10 (two's complement interpretation).
     fn jr_imm8(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         // Read the signed offset (PC is already at opcode + 1)
         let imm8 = self.get_imm8() as i8; // Parse to i8 to handle
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.registers.increment_pc(); // Move past the offset byte
 
         // Add the signed offset to PC
         // We need to convert i8 to i16 first to handle negative numbers correctly
         self.registers.pc = (self.registers.pc as i16).wrapping_add(imm8 as i16) as u16;
 
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// If condition cc and the flag status match, jumps -127 to +129 steps from the current address.
@@ -72,15 +72,15 @@ impl CpuJumpInstructions for Cpu {
         if condition_met {
             self.jr_imm8();
         } else {
-            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_update_timers_and_ppu();
             self.registers.increment_pc(); // Move past the offset byte
-            self.increment_4_cycles_and_update_timers();
+            self.increment_4_cycles_update_timers_and_ppu();
         }
     }
 
     /// Loads the contents of register pair HL in program counter PC.
     fn jp_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.registers.pc = self.registers.get_hl();
     }
 }

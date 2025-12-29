@@ -14,11 +14,11 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
     /// Loads 2 bytes of immediate data to 16-bit register, where it can be the registers BC, DE, HL or SP.
     /// BC = 0b00, DE = 0b01, HL = 0b10, SP = 0b11
     fn ld_r16_imm16(&mut self, opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let destination_register = Self::get_16bit_destination_register(opcode);
         let value = self.get_imm16();
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         match destination_register {
             0b00 => self.registers.set_bc(value),
@@ -33,9 +33,9 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
 
     /// Loads the contents of register pair HL in stack pointer SP.
     fn ld_sp_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.registers.sp = self.registers.get_hl();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Pushes the contents of register pair qq (a 16-bit register) onto the memory stack. First 1 is subtracted from SP and the
@@ -43,8 +43,8 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
     /// then placed on the stack. The contents of SP are automatically decremented by 2.
     /// FF80h-FFFEh: Can be used as CPU work RAM and/or stack RAM.
     fn push_r16_onto_memory_stack(&mut self, opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let source_register = Self::get_16bit_destination_register(opcode);
         let value = match source_register {
             0b00 => self.registers.get_bc(),
@@ -55,8 +55,8 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
         };
 
         self.push_value_to_sp(value);
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Pops contents from the memory stack and into register pair qq.
@@ -64,10 +64,10 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
     /// Next, the contents of SP are incremented by 1 and the contents of the memory they specify are loaded in the upper portion of qq.
     /// The contents of SP are automatically incremented by 2.
     fn pop_r16_from_memory_stack(&mut self, opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let value = self.pop_value_from_sp();
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let destination_register = Self::get_16bit_destination_register(opcode);
         match destination_register {
@@ -84,9 +84,9 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
     /// The Z flag is reset. The N flag is reset.
     /// H flag is set if there is a carry from bit 3 and C flag is set if there is a carry from bit 7.
     fn ld_hl_sp_imm8(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let imm8 = self.get_imm8();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let sp = self.registers.sp;
         let (result, c_flag, h_flag) = sp.add_u8_as_signed(imm8);
         self.registers.set_hl(result);
@@ -95,22 +95,22 @@ impl Cpu16BitTransferInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_c_flag(c_flag);
         self.registers.flags.set_h_flag(h_flag);
         self.registers.increment_pc();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Stores the lower byte of SP at address nn specified by the 16-bit immediate operand nn and the upper byte of SP at address nn + 1.
     fn ld_imm16_sp(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let imm16 = self.get_imm16();
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let sp_lower_byte = (self.registers.sp & 0b011111111) as u8;
         self.memory_bus.write_byte(imm16, sp_lower_byte);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let sp_higher_byte = (self.registers.sp >> 8) as u8;
         self.memory_bus.write_byte(imm16 + 1, sp_higher_byte);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         self.registers.increment_pc_twice();
     }

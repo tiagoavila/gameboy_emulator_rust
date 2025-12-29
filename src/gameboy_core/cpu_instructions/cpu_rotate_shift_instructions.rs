@@ -30,7 +30,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// are copied to bit 2. The same operation is repeated in sequence for the rest of the register.
     /// The contents of bit 7 are placed in both the CY flag and bit 0 of register A.
     fn rlca(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let rotated_value = self.rotate_left_and_update_flags(self.registers.a, false, false);
         self.registers.a = rotated_value;
     }
@@ -40,7 +40,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// of the register.
     /// The previous contents of the carry flag are copied to bit 0.
     fn rla(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let rotated_value = self.rotate_left_and_update_flags(self.registers.a, true, false);
         self.registers.a = rotated_value;
     }
@@ -50,7 +50,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the register.
     /// The contents of bit 0 are placed in both the C flag and bit 7 of register A
     fn rrca(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let rotated_value = self.rotate_right_and_update_flags(self.registers.a, false, false);
         self.registers.a = rotated_value;
     }
@@ -60,7 +60,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the register.
     /// The previous contents of the carry flag are copied to bit 7.
     fn rra(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let rotated_value = self.rotate_right_and_update_flags(self.registers.a, true, false);
         self.registers.a = rotated_value;
     }
@@ -70,8 +70,8 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the register.
     /// The contents of bit 7 are placed in both the CY flag and bit 0 of register B
     fn rlc_r8(&mut self, cb_opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let register = Self::get_source_register(cb_opcode);
         let value = self.registers.get_8bit_register_value(register);
 
@@ -83,15 +83,15 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// Rotates the contents of memory specified by register pair HL to the left.
     /// The contents of bit 7 are placed in both the CY flag and bit 0 of register B
     fn rlc_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let hl = self.registers.get_hl();
         let value = self.memory_bus.read_byte(hl);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let rotated_value = self.rotate_left_and_update_flags(value, false, true);
         self.memory_bus.write_byte(hl, rotated_value);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Rotate the contents of 8-bit register to the left. That is, the contents of bit 0 are copied to bit 1,
@@ -99,8 +99,8 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the register.
     /// The previous contents of the carry (CY) flag are copied to bit 0 of register
     fn rl_r8(&mut self, cb_opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let register = Self::get_source_register(cb_opcode);
         let value = self.registers.get_8bit_register_value(register);
 
@@ -112,15 +112,15 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// Rotates the contents of memory specified by register pair HL to the left.
     /// The previous contents of the carry (CY) flag are copied to bit 0 of register B
     fn rl_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let hl = self.registers.get_hl();
         let value = self.memory_bus.read_byte(hl);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let rotated_value = self.rotate_left_and_update_flags(value, true, true);
         self.memory_bus.write_byte(hl, rotated_value);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Rotates the contents of a 8-bit register to the right.
@@ -129,8 +129,8 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the register.
     /// The contents of bit 0 are placed in both the C flag and bit 7 of the register.
     fn rrc_r8(&mut self, cb_opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let register = Self::get_source_register(cb_opcode);
         let value = self.registers.get_8bit_register_value(register);
 
@@ -142,15 +142,15 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// Rotates the contents of memory specified by register pair HL to the right.
     /// The contents of bit 0 are placed in both the C flag and bit 7 of the register.
     fn rrc_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let hl = self.registers.get_hl();
         let value = self.memory_bus.read_byte(hl);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let rotated_value = self.rotate_right_and_update_flags(value, false, true);
         self.memory_bus.write_byte(hl, rotated_value);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Rotates the contents of a 8-bit register to the right.
@@ -159,8 +159,8 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the register.
     /// The previous contents of the carry (CY) flag are copied to bit 7 of the register.
     fn rr_r8(&mut self, cb_opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let register = Self::get_source_register(cb_opcode);
         let value = self.registers.get_8bit_register_value(register);
 
@@ -172,15 +172,15 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// Rotates the contents of memory specified by register pair HL to the right.
     /// The previous contents of the carry (CY) flag are copied to bit 7 of the register.
     fn rr_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let hl = self.registers.get_hl();
         let value = self.memory_bus.read_byte(hl);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let rotated_value = self.rotate_right_and_update_flags(value, true, true);
         self.memory_bus.write_byte(hl, rotated_value);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
     
     /// Shifts the contents of a 8-bit register to the left. That is, the contents of bit 0 are copied to bit 1 and the 
@@ -188,8 +188,8 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the operand. 
     /// The content of bit 7 is copied to CY, and bit 0 is reset.
     fn sla_r8(&mut self, cb_opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let register = Self::get_source_register(cb_opcode);
         let mut value = self.registers.get_8bit_register_value(register);
 
@@ -207,11 +207,11 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// Shifts the contents of memory specified by register pair HL to the left.
     /// The content of bit 7 is copied to CY, and bit 0 is reset.
     fn sla_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let hl = self.registers.get_hl();
         let mut value = self.memory_bus.read_byte(hl);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let bit7 = value >> 7;
         value <<= 1;
@@ -222,7 +222,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Shifts the contents of 8-bit register to the right. That is, the contents of bit 7 are copied to bit 6 and the
@@ -230,8 +230,8 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the operand. 
     /// The contents of bit 0 are copied to CY, and the content of bit 7 is unchanged.
     fn sra_r8(&mut self, cb_opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let register = Self::get_source_register(cb_opcode);
         let mut value = self.registers.get_8bit_register_value(register);
 
@@ -252,11 +252,11 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// Shifts the contents of memory specified by register pair HL to the right.
     /// The contents of bit 0 are copied to CY, and the content of bit 7 is unchanged.
     fn sra_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let hl = self.registers.get_hl();
         let mut value = self.memory_bus.read_byte(hl);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let bit7 = value & 0b10000000;
         let bit0 = value & 0b00000001;
@@ -269,7 +269,7 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     /// Shifts the contents of operand m to the right. That is, the contents of bit 7 are copied to bit 6 and the 
@@ -277,8 +277,8 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// The same operation is repeated in sequence for the rest of the operand. 
     /// The contents of bit 0 are copied to CY, and bit 7 is reset. 
     fn srl_r8(&mut self, cb_opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let register = Self::get_source_register(cb_opcode);
         let mut value = self.registers.get_8bit_register_value(register);
 
@@ -297,11 +297,11 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     /// Shifts the contents of memory specified by register pair HL to the right.
     /// The contents of bit 0 are copied to CY, and bit 7 is reset
     fn srl_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let hl = self.registers.get_hl();
         let mut value = self.memory_bus.read_byte(hl);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
 
         let bit0 = value & 0b00000001;
         value >>= 1;
@@ -312,13 +312,13 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
         self.registers.flags.set_h_flag(false);
         
         self.memory_bus.write_byte(hl, value);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
     
     /// Shifts the contents of the lower-order and higher-order 4 bits of a 8-bit register.
     fn swap_r8(&mut self, cb_opcode: u8) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let register = Self::get_source_register(cb_opcode);
         let value = self.registers.get_8bit_register_value(register);
         
@@ -335,18 +335,18 @@ impl CpuRotateShiftInstructions for crate::gameboy_core::cpu::Cpu {
     
     /// Shifts the contents of the lower-order and higher-order 4 bits of a 8-bit register.
     fn swap_hl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
+        self.increment_4_cycles_update_timers_and_ppu();
         let hl = self.registers.get_hl();
         let value = self.memory_bus.read_byte(hl);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         
         let high_order_4_bits = value & 0b11110000;
         let low_order_4_bits = value & 0b00001111;
         
         let swapped_value = high_order_4_bits >> 4 | low_order_4_bits << 4;
         self.memory_bus.write_byte(hl, swapped_value);
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.registers.flags.set_z_flag_from_u8(swapped_value);
         self.registers.flags.n = false;
         self.registers.flags.set_h_flag(false);

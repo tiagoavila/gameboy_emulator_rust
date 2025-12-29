@@ -16,24 +16,24 @@ pub trait CpuMiscellaneousInstructions {
 impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     /// No Operation - Do nothing for one CPU cycle.
     fn nop(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         return;
     }
 
     /// This instruction disables interrupts but not immediately. Interrupts are disabled after instruction after DI is executed.
     fn di(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.di_instruction_pending = true;
     }
 
     fn ei(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.ei_instruction_pending = true;
     }
 
     /// Flips the carry flag CY. H and N flags are reset.
     fn ccf(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.registers.flags.c = !self.registers.flags.c;
         self.registers.flags.h = false;
         self.registers.flags.n = false;
@@ -49,7 +49,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     /// - If the C flag is set, subtract 0x60 from A.
     /// After the adjustment, the Z flag is set if A is zero, and the H flag is cleared.
     fn daa(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let mut adjustment = 0u8;
 
         if !self.registers.flags.n {
@@ -80,7 +80,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
 
     /// Inverts all bits in register A. N and H flags are set.
     fn cpl(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.registers.a = !self.registers.a;
         self.registers.flags.n = true;
         self.registers.flags.h = true;
@@ -88,14 +88,14 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
 
     /// Sets the carry flag CY. H and N flags are reset.
     fn scf(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         self.registers.flags.set_c_flag(true);
         self.registers.flags.h = false;
         self.registers.flags.n = false;
     }
 
     fn halt(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
         let is_interrupt_pending = self.is_interrupt_pending();
 
         if is_interrupt_pending {
@@ -111,7 +111,7 @@ impl CpuMiscellaneousInstructions for crate::gameboy_core::cpu::Cpu {
     }
 
     fn stop(&mut self) {
-        self.increment_4_cycles_and_update_timers();
+        self.increment_4_cycles_update_timers_and_ppu();
     }
 
     fn is_interrupt_pending(&self) -> bool {

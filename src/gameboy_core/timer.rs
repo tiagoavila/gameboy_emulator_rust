@@ -1,4 +1,4 @@
-use crate::gameboy_core::{cpu::Cpu, cpu_components::MemoryBus, interrupts::InterruptType};
+use crate::gameboy_core::{cpu::Cpu, interrupts::InterruptType};
 
 pub struct Timer {
     /// Number of cycles executed since last increment for the DIV register
@@ -58,7 +58,7 @@ impl Timer {
         if cpu.timer.tima_overflowed {
             let tma = cpu.memory_bus.get_tma_register();
             cpu.memory_bus.set_tima_register(tma);
-            cpu.memory_bus.update_timer_flag_in_if_register(InterruptType::Timer, true);
+            cpu.memory_bus.update_flag_in_if_register(InterruptType::Timer, true);
             cpu.timer.tima_overflowed = false;
             cpu.timer.cycles_executed_tima += (cycles_of_last_instruction - 4) as u16; // Account for the 4 T-cycles delay
             return;

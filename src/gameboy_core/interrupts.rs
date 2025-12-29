@@ -117,11 +117,11 @@ impl InterruptsHandler {
             InterruptType::Joypad => JOYPAD_INTERRUPT_HANDLER_ADDRESS,
         };
 
-        cpu.increment_4_cycles_and_update_timers();
-        cpu.increment_4_cycles_and_update_timers();
-        cpu.increment_4_cycles_and_update_timers();
-        cpu.increment_4_cycles_and_update_timers();
-        cpu.increment_4_cycles_and_update_timers();
+        cpu.increment_4_cycles_update_timers_and_ppu();
+        cpu.increment_4_cycles_update_timers_and_ppu();
+        cpu.increment_4_cycles_update_timers_and_ppu();
+        cpu.increment_4_cycles_update_timers_and_ppu();
+        cpu.increment_4_cycles_update_timers_and_ppu();
         cpu.is_halt_mode = false;
     }
 

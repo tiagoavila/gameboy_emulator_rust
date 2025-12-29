@@ -377,9 +377,8 @@ impl MemoryBus {
         self.write_byte(registers_contants::TIMA, value);
     }
 
-    /// Sets or clears the timer interrupt flag in the IF register.
-    /// The IF register controls which interrupts are being requested.
-    pub(crate) fn update_timer_flag_in_if_register(
+    /// Update the IF register to request or clear a specific interrupt
+    pub(crate) fn update_flag_in_if_register(
         &mut self,
         interrupt_type: InterruptType,
         value: bool,
