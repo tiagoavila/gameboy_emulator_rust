@@ -1,5 +1,5 @@
 use crate::gameboy_core::{
-    constants::{INITIAL_PC, MEMORY_SIZE},
+    constants::{INITIAL_PC, MEMORY_SIZE, OAM_END, OAM_START},
     interrupts::InterruptType,
     ppu_components::LcdcRegister,
     registers_contants::{self, BGP, LCDC, SCX, SCY},
@@ -318,6 +318,11 @@ impl MemoryBus {
     pub fn get_bg_tile_map(&self, lcdc_register: &LcdcRegister) -> &[u8] {
         let (start, end) = lcdc_register.get_bg_tiles_map_area_address_range();
         &self.memory[start as usize..=end as usize]
+    }
+    
+    /// Returns the object attribute memory (OAM) which is located from 0xFE00 to 0xFE9F
+    pub fn get_object_attribute_memory(&self) -> &[u8] {
+        &self.memory[OAM_START as usize..=OAM_END as usize]
     }
 
     /// Get SCY register value

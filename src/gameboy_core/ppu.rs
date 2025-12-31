@@ -25,9 +25,32 @@ enum PpuMode {
     PixelTransfer = 3,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct Object {
+    pub y: u8,
+    pub x: u8,
+    pub tile_index: u8,
+    pub attributes: ObjectAttributes,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct ObjectAttributes {
+    pub priority: bool,
+    pub y_flip: bool,
+    pub x_flip: bool,
+    pub pallete: ObjectPallete,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum ObjectPallete {
+    OBP0 = 0,
+    OBP1 = 1,
+}
+
 pub struct Ppu {
     pub screen: [[u32; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT], // 144 rows of 160 pixels
     pub dots: u16,
+    pub objects_to_be_rendered: [Object; 10],
 }
 
 impl Ppu {
@@ -35,6 +58,17 @@ impl Ppu {
         Self {
             screen: [[0; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT],
             dots: 0,
+            objects_to_be_rendered: [Object {
+                y: 0,
+                x: 0,
+                tile_index: 0,
+                attributes: ObjectAttributes {
+                    priority: false,
+                    y_flip: false,
+                    x_flip: false,
+                    pallete: ObjectPallete::OBP0,
+                },
+            }; 10],
         }
     }
 
@@ -272,6 +306,7 @@ impl Ppu {
             } else {
                 // This handles V-Blank Exit (transition from V-Blank to OAM Search)
                 Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::OamSearch);
+                Ppu::set_objects_to_be_rendered(cpu, ly);
             }
         } else {
             Ppu::update_ppu_mode_based_on_dots_count(cpu);
@@ -323,5 +358,45 @@ impl Ppu {
         let mut stat = cpu.memory_bus.read_byte(STAT);
         stat = (stat & 0b11111100) | (mode as u8);
         cpu.memory_bus.write_byte(STAT, stat);
+    }
+
+    /// Sets the objects (sprites) to be rendered for the current scanline (LY).
+    fn set_objects_to_be_rendered(cpu: &mut cpu::Cpu, ly: u8) {
+        let objects = Ppu::get_objects(&cpu.memory_bus);
+        cpu.ppu.objects_to_be_rendered = objects
+            .iter()
+            .take(10)
+            .cloned()
+            .collect::<Vec<Object>>()
+            .try_into()
+            .unwrap();
+    }
+
+    /// Get all 40 objects (sprites) from OAM (Object Attribute Memory).
+    fn get_objects(memory_bus: &cpu_components::MemoryBus) -> [Object; 40] {
+        let oam_memory = memory_bus.get_object_attribute_memory();
+
+        let objects = oam_memory
+            .chunks(4)
+            .map(|obj| Object {
+                y: obj[0],
+                x: obj[1],
+                tile_index: obj[2],
+                attributes: ObjectAttributes {
+                    priority: (obj[3] & 0b1000_0000) != 0,
+                    y_flip: (obj[3] & 0b0100_0000) != 0,
+                    x_flip: (obj[3] & 0b0010_0000) != 0,
+                    pallete: if (obj[3] & 0b0100_0000) != 0 {
+                        ObjectPallete::OBP1
+                    } else {
+                        ObjectPallete::OBP0
+                    },
+                },
+            })
+            .collect::<Vec<Object>>()
+            .try_into()
+            .unwrap();
+
+        objects
     }
 }
