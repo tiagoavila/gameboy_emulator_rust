@@ -9,8 +9,8 @@ use minifb::{Key, Window};
 pub mod gameboy_core;
 
 fn main() {
-    let rom_file = "games/Super Mario Land.gb";
-    // let rom_file = "games/Tetris.gb";
+    // let rom_file = "games/Super Mario Land.gb";
+    let rom_file = "games/Tetris.gb";
     let rom_binary = cpu_utils::read_rom(format!("files/roms/{}", rom_file).as_str()).unwrap();
 
     let debug_mode = false;

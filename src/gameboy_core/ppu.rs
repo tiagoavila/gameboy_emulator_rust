@@ -50,7 +50,7 @@ pub enum ObjectPallete {
 pub struct Ppu {
     pub screen: [[u32; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT], // 144 rows of 160 pixels
     pub dots: u16,
-    pub objects_to_be_rendered: [Object; 10],
+    pub objects_to_be_rendered: Vec<Object>,
 }
 
 impl Ppu {
@@ -58,17 +58,7 @@ impl Ppu {
         Self {
             screen: [[0; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT],
             dots: 0,
-            objects_to_be_rendered: [Object {
-                y: 0,
-                x: 0,
-                tile_index: 0,
-                attributes: ObjectAttributes {
-                    priority: false,
-                    y_flip: false,
-                    x_flip: false,
-                    pallete: ObjectPallete::OBP0,
-                },
-            }; 10],
+            objects_to_be_rendered: Vec::new(),
         }
     }
 
@@ -306,7 +296,7 @@ impl Ppu {
             } else {
                 // This handles V-Blank Exit (transition from V-Blank to OAM Search)
                 Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::OamSearch);
-                Ppu::set_objects_to_be_rendered(cpu, ly);
+                Ppu::define_objects_to_be_rendered(cpu, ly);
             }
         } else {
             Ppu::update_ppu_mode_based_on_dots_count(cpu);
@@ -360,20 +350,44 @@ impl Ppu {
         cpu.memory_bus.write_byte(STAT, stat);
     }
 
-    /// Sets the objects (sprites) to be rendered for the current scanline (LY).
-    fn set_objects_to_be_rendered(cpu: &mut cpu::Cpu, ly: u8) {
-        let objects = Ppu::get_objects(&cpu.memory_bus);
-        cpu.ppu.objects_to_be_rendered = objects
+    const Y_OFFSET: isize = 16;
+
+    /// Sets the 10 objects (sprites) to be rendered for the current scanline (LY)
+    /// and stores them in the PPU.
+    fn define_objects_to_be_rendered(cpu: &mut cpu::Cpu, ly: u8) {
+        let ly_isize = ly as isize;
+        let objects = Ppu::get_all_40_objects(&cpu.memory_bus);
+        let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(&cpu.memory_bus);
+        let object_height: isize = if lcdc_register.obj_size { 16 } else { 8 };
+        let objects_to_be_rendered = objects
             .iter()
-            .take(10)
-            .cloned()
-            .collect::<Vec<Object>>()
-            .try_into()
-            .unwrap();
+            .filter_map(|object| {
+                // start_object_screen_y: object.y - 16 (handles the 16 offset)
+                // end_object_screen_y: start_object_screen_y + object_height
+                // Formula for 8x8 objects: start_object_screen_y <= ly < end_object_screen_y + 8
+                // Formula for 8x16 objects: start_object_screen_y <= ly < end_object_screen_y + 16
+                let start_object_screen_y = (object.y as isize) - Self::Y_OFFSET;
+                let end_object_screen_y: isize = start_object_screen_y + object_height;
+                let start_object_screen_x = (object.x as isize) - 8;
+                if (start_object_screen_y <= ly_isize && ly_isize < end_object_screen_y) && (
+                    start_object_screen_x >= 0 && start_object_screen_x < GAME_SECTION_WIDTH as isize
+                ) {
+                    Some(*object)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<Object>>();
+
+        cpu.ppu.objects_to_be_rendered = if objects_to_be_rendered.len() <= 10 {
+            objects_to_be_rendered
+        } else {
+            objects_to_be_rendered[..10].to_vec()
+        };
     }
 
     /// Get all 40 objects (sprites) from OAM (Object Attribute Memory).
-    fn get_objects(memory_bus: &cpu_components::MemoryBus) -> [Object; 40] {
+    fn get_all_40_objects(memory_bus: &cpu_components::MemoryBus) -> [Object; 40] {
         let oam_memory = memory_bus.get_object_attribute_memory();
 
         let objects = oam_memory
