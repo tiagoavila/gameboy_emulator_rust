@@ -16,11 +16,9 @@ fn main() {
     let debug_mode = false;
     let mut cpu = gameboy_core::cpu::Cpu::start(rom_binary, debug_mode);
 
-    if debug_mode {
-        // clear previous logs
-        cpu_utils::clear_logs().unwrap(); 
-        cpu_utils::clear_dr_gameboy_log().unwrap();
-    }
+    // clear previous logs
+    cpu_utils::clear_logs().unwrap();
+    cpu_utils::clear_dr_gameboy_log().unwrap();
 
     // Run the event loop
     run_gameboy(&mut cpu);
@@ -83,24 +81,26 @@ fn render_tile_to_buffer(tile: &Tile, buffer: &mut [u32], start_row: usize, star
 }
 
 fn run_gameboy(cpu: &mut gameboy_core::cpu::Cpu) {
-    let mut screen = Screen::new("Gameboy Emulator".to_string())
-        .unwrap_or_else(|e| {
-            panic!("{}", e);
-        });
+    let mut screen = Screen::new("Gameboy Emulator".to_string()).unwrap_or_else(|e| {
+        panic!("{}", e);
+    });
 
     cpu.set_debug_mode(true);
 
     while screen.window.is_open() && !screen.window.is_key_down(Key::Escape) {
-        for _ in 0..70224 {
+        for _ in 0..456 {
             cpu.tick();
         }
 
-        cpu.ppu.update_screen_buffer(&cpu.memory_bus);
+        // cpu.ppu.update_screen_buffer(&cpu.memory_bus);
 
+        // if cpu.ppu.need_to_render_line {
         screen.render_tile_data_to_screen_buffer(cpu);
         screen.render_game_to_screen_buffer(cpu);
 
         screen.update_window_with_buffer();
+        cpu.ppu.need_to_render_line = false;
+        // }
     }
 }
 

@@ -122,8 +122,8 @@ impl Cpu {
 
         let opcode = self.fetch_opcode();
 
-        // For whateve reason Dr Game boy doensn´t log interrupts handlers addresses, this is just to match their logs
-        if !INTERRUPTS_HANDLERS_ADDRESSES.contains(&self.registers.pc) {
+        // For whatever reason Dr Game boy doensn´t log interrupts handlers addresses, this is just to match their logs
+        if !INTERRUPTS_HANDLERS_ADDRESSES.contains(&self.registers.pc) && self.is_debug_mode {
             cpu_utils::log(self, opcode).unwrap();
         }
 

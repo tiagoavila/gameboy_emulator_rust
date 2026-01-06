@@ -18,6 +18,7 @@ const VBLANK_START_LINE: u8 = 144;
 /// LY holds values from 0 to 153, so total lines are 154.
 const LY_MAX_LINES: u8 = 154;
 
+#[derive(PartialEq)]
 enum PpuMode {
     HBlank = 0,
     VBlank = 1,
@@ -29,7 +30,7 @@ enum PpuMode {
 pub struct Object {
     pub y: u8,
     pub x: u8,
-    pub tile_index: u8,
+    pub tile_index: usize,
     pub attributes: ObjectAttributes,
 }
 
@@ -51,6 +52,8 @@ pub struct Ppu {
     pub screen: [[u32; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT], // 144 rows of 160 pixels
     pub dots: u16,
     pub objects_to_be_rendered: Vec<Object>,
+    pub bg_screen_buffer: [[u32; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT],
+    pub need_to_render_line: bool,
 }
 
 impl Ppu {
@@ -59,6 +62,8 @@ impl Ppu {
             screen: [[0; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT],
             dots: 0,
             objects_to_be_rendered: Vec::new(),
+            bg_screen_buffer: [[0; GAME_SECTION_WIDTH]; GAME_SECTION_HEIGHT],
+            need_to_render_line: false,
         }
     }
 
@@ -105,8 +110,7 @@ impl Ppu {
         let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(memory_bus);
         let tiles = self.get_tiles(memory_bus);
 
-        //bg setup
-        let bg_buffer = self.get_bg_buffer(memory_bus, &tiles, &lcdc_register);
+        let bg_buffer = self.get_entire_bg_buffer(memory_bus, &tiles, &lcdc_register);
         let screen_buffer = self.get_visible_bg_buffer(&bg_buffer, memory_bus);
 
         screen_buffer
@@ -145,7 +149,7 @@ impl Ppu {
     /// Generates the background buffer representing the entire 256x256 pixel background.
     /// This buffer is constructed by reading the tile data and the background tile map from VRAM, parses the background tile map
     /// into a 32x32 grid, and then mapping each tile's pixels into the correct positions in the 256x256 buffer.
-    pub fn get_bg_buffer(
+    pub fn get_entire_bg_buffer(
         &self,
         memory_bus: &cpu_components::MemoryBus,
         tiles: &[Tile; 384],
@@ -293,13 +297,34 @@ impl Ppu {
 
                 // Set mode to 1 (V-Blank)
                 Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::VBlank);
-            } else {
+            } else if ly == 0 {
                 // This handles V-Blank Exit (transition from V-Blank to OAM Search)
                 Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::OamSearch);
                 Ppu::define_objects_to_be_rendered(cpu, ly);
             }
         } else {
-            Ppu::update_ppu_mode_based_on_dots_count(cpu);
+            // Update the PPU mode based on the current number of dots (T-cycles) in the scanline.
+            // each dot represents a T-cycle
+            match cpu.ppu.dots {
+                // OAM Search lasts 80 dots
+                0..=79 => {
+                    Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::OamSearch);
+                    cpu.ppu.need_to_render_line = false;
+                }
+                // Drawing pixels lasts at least 172 dots, there are cases where it can take longer but I'm using the simplest approach for now
+                80..=251 => {
+                    let current_ppu_mode = Ppu::get_ppu_mode_flag_from_stat(cpu);
+                    if current_ppu_mode != PpuMode::PixelTransfer {
+                        Ppu::render_line(cpu);
+                        Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::PixelTransfer);
+                        cpu.ppu.need_to_render_line = true;
+                    }
+                }
+                // Greater than or equal to 252 dots means the rest of the scanline (H-Blank)
+                _ => {
+                    Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::HBlank);
+                }
+            }
         }
 
         Self::compare_lyc(cpu);
@@ -321,33 +346,23 @@ impl Ppu {
         cpu.memory_bus.write_byte(STAT, stat);
     }
 
-    /// Update the PPU mode based on the current number of dots (T-cycles) in the scanline.
-    fn update_ppu_mode_based_on_dots_count(cpu: &mut cpu::Cpu) {
-        // each dot represents a T-cycle
-        match cpu.ppu.dots {
-            // OAM Search lasts 80 dots
-            0..=79 => {
-                // Set mode 2 (OAM Search)
-                Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::OamSearch);
-            }
-            // Drawing pixels lasts at least 172 dots, there are cases where it can take longer but I'm using the simplest approach for now
-            80..=251 => {
-                // Set mode 3 (Pixel Transfer)
-                Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::PixelTransfer);
-            }
-            // Greater than or equal to 252 dots means the rest of the scanline (H-Blank)
-            _ => {
-                // Set mode 0 (H-Blank)
-                Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::HBlank);
-            }
-        }
-    }
-
     /// Sets the PPU mode flag in the STAT register.
     fn set_ppu_mode_flag_in_stat(cpu: &mut cpu::Cpu, mode: PpuMode) {
         let mut stat = cpu.memory_bus.read_byte(STAT);
         stat = (stat & 0b11111100) | (mode as u8);
         cpu.memory_bus.write_byte(STAT, stat);
+    }
+
+    /// Gets the current PPU mode flag from the STAT register.
+    fn get_ppu_mode_flag_from_stat(cpu: &cpu::Cpu) -> PpuMode {
+        let stat = cpu.memory_bus.read_byte(STAT);
+        match stat & 0b00000011 {
+            0 => PpuMode::HBlank,
+            1 => PpuMode::VBlank,
+            2 => PpuMode::OamSearch,
+            3 => PpuMode::PixelTransfer,
+            _ => unreachable!(),
+        }
     }
 
     const Y_OFFSET: isize = 16;
@@ -369,9 +384,10 @@ impl Ppu {
                 let start_object_screen_y = (object.y as isize) - Self::Y_OFFSET;
                 let end_object_screen_y: isize = start_object_screen_y + object_height;
                 let start_object_screen_x = (object.x as isize) - 8;
-                if (start_object_screen_y <= ly_isize && ly_isize < end_object_screen_y) && (
-                    start_object_screen_x >= 0 && start_object_screen_x < GAME_SECTION_WIDTH as isize
-                ) {
+                let end_object_screen_x: isize = start_object_screen_x + 8;
+                if (start_object_screen_y <= ly_isize && ly_isize < end_object_screen_y)
+                    && (end_object_screen_x >= 0 && start_object_screen_x < GAME_SECTION_WIDTH as isize)
+                {
                     Some(*object)
                 } else {
                     None
@@ -395,7 +411,7 @@ impl Ppu {
             .map(|obj| Object {
                 y: obj[0],
                 x: obj[1],
-                tile_index: obj[2],
+                tile_index: obj[2] as usize,
                 attributes: ObjectAttributes {
                     priority: (obj[3] & 0b1000_0000) != 0,
                     y_flip: (obj[3] & 0b0100_0000) != 0,
@@ -413,4 +429,68 @@ impl Ppu {
 
         objects
     }
+
+    fn render_line(cpu: &mut cpu::Cpu) {
+        let ly = cpu.memory_bus.read_byte(LY);
+        if ly >= 144 {
+            return;
+        }
+
+        let ly_usize = ly as usize;
+
+        Ppu::render_background_line_to_screen_buffer(cpu, ly_usize);
+
+        let lcdc = ppu_components::LcdcRegister::get_lcdc_register(&cpu.memory_bus);
+
+        Ppu::render_window_line_to_screen_buffer(cpu, ly_usize, &lcdc);
+
+        Ppu::render_objects_line_to_screen_buffer(cpu, ly_usize, &lcdc);
+    }
+
+    fn render_background_line_to_screen_buffer(cpu: &mut cpu::Cpu, ly_usize: usize) {
+        let background_buffer: [[u32; 160]; 144] =
+            cpu.ppu.get_bg_screen_buffer_as_colors(&cpu.memory_bus);
+        let background_line = background_buffer[ly_usize];
+        cpu.ppu.screen[ly_usize] = background_line;
+    }
+        
+    fn render_window_line_to_screen_buffer(cpu: &mut cpu::Cpu, ly_usize: usize, lcdc: &ppu_components::LcdcRegister) {
+        if lcdc.window_enable {
+        }
+    }
+    
+    fn render_objects_line_to_screen_buffer(cpu: &mut cpu::Cpu, ly_usize: usize, lcdc: &ppu_components::LcdcRegister) {
+        if lcdc.obj_enable {
+            let tiles = cpu.ppu.get_tiles(&cpu.memory_bus);
+            let objects = &cpu.ppu.objects_to_be_rendered;
+            for object in objects {
+                let start_object_screen_y = (object.y as usize) - Self::Y_OFFSET as usize;
+                let start_object_screen_x = (object.x as usize) - 8;
+                let tile = tiles[object.tile_index as usize];
+                let tile_row = ly_usize - start_object_screen_y;
+                for tile_col in 0..8 {
+                    let screen_x = start_object_screen_x as isize + tile_col as isize;
+                    if screen_x < 0 || screen_x >= GAME_SECTION_WIDTH as isize {
+                        continue; // Skip pixels outside the screen bounds
+                    }
+
+                    let pixel_value = match tile.pixels[tile_row][tile_col] {
+                        TilePixelValue::Zero => 0,
+                        TilePixelValue::One => 1,
+                        TilePixelValue::Two => 2,
+                        TilePixelValue::Three => 3,
+                    };
+                    
+                    if pixel_value == 0 {
+                        continue; // Color 0 is transparent for sprites
+                    }
+
+                    let color = COLORS[pixel_value as usize];
+                    cpu.ppu.screen[ly_usize][screen_x as usize] = color;
+                }
+            } 
+        }
+    }
+    
+    
 }

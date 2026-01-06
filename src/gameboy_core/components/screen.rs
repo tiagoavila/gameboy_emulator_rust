@@ -48,7 +48,12 @@ impl Screen {
 
     /// Render the current Game to the screen buffer with scaling applied.
     pub fn render_game_to_screen_buffer(&mut self, cpu: &gameboy_core::cpu::Cpu) {
-        println!("LCDC Register {:0b}", cpu.memory_bus.get_lcdc_register());
+        let lcdc = cpu.memory_bus.get_lcdc_register();
+        println!("Ppu is enabled: {}", lcdc & 0b1000_0000 != 0);
+        println!("Window is enabled: {}", lcdc & 0b0010_0000 != 0);
+        println!("Objects are enabled: {}", lcdc & 0b0000_0010 != 0);
+        println!("Bg & Window are enabled/priority: {}", lcdc & 0b0000_0001 != 0);
+        println!("===============================");
         for row in 0..GAME_SECTION_HEIGHT {
             for col in 0..GAME_SECTION_WIDTH {
                 // Apply scaling

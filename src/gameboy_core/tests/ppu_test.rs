@@ -196,7 +196,7 @@ mod tests {
         // Get screen buffer and render it
         let tiles = cpu.ppu.get_tiles(&cpu.memory_bus);
         let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(&cpu.memory_bus);
-        let bg_screen_buffer = cpu.ppu.get_bg_buffer(&cpu.memory_bus, &tiles, &lcdc_register);
+        let bg_screen_buffer = cpu.ppu.get_entire_bg_buffer(&cpu.memory_bus, &tiles, &lcdc_register);
         render_bg_screen_with_minifb(&bg_screen_buffer);
     }
 
