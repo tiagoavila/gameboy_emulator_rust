@@ -85,22 +85,21 @@ fn run_gameboy(cpu: &mut gameboy_core::cpu::Cpu) {
         panic!("{}", e);
     });
 
-    cpu.set_debug_mode(true);
+    cpu.set_debug_mode(false);
 
     while screen.window.is_open() && !screen.window.is_key_down(Key::Escape) {
-        for _ in 0..456 {
+        // FIX: Run for a COMPLETE FRAME (70,224 T-cycles)
+        // Each cpu.tick() executes ONE instruction, which calls increment_4_cycles_update_timers_and_ppu()
+        // multiple times based on instruction timing. We need to track actual T-cycles, not instruction count.
+        // 456 T-cycles per scanline × 154 total lines = 70,224 T-cycles per frame
+        let target_cycles = cpu.clock_cycles + 70224;
+        while cpu.clock_cycles < target_cycles {
             cpu.tick();
         }
 
-        // cpu.ppu.update_screen_buffer(&cpu.memory_bus);
-
-        // if cpu.ppu.need_to_render_line {
         screen.render_tile_data_to_screen_buffer(cpu);
         screen.render_game_to_screen_buffer(cpu);
-
         screen.update_window_with_buffer();
-        cpu.ppu.need_to_render_line = false;
-        // }
     }
 }
 

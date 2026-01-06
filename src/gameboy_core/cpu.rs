@@ -89,7 +89,7 @@ impl Cpu {
         self.memory_bus.write_byte(NR50, 0x77);
         self.memory_bus.write_byte(NR51, 0xF3);
         self.memory_bus.write_byte(NR52, 0xF1);
-        self.memory_bus.set_lcdc_register(0x91); // 10010001: LCD enabled, BG enabled, Tile data area at 0x8000, BG tile map area at 0x9800
+        self.memory_bus.set_lcdc_register(0x93); // 10010011: LCD enabled, BG enabled, Tile data area at 0x8000, BG tile map area at 0x9800, Objects enabled
         self.memory_bus.write_byte(STAT, 0x85);
         self.memory_bus.set_scy_register(0x00);
         self.memory_bus.set_scx_register(0x00);
@@ -97,8 +97,8 @@ impl Cpu {
         self.memory_bus.write_byte(LYC, 0x00);
         self.memory_bus.write_byte(DMA, 0xFF);
         self.memory_bus.set_bgp_register(0xFC);
-        self.memory_bus.write_byte(OBP0, 0xFF);
-        self.memory_bus.write_byte(OBP1, 0xFF);
+        self.memory_bus.write_byte(OBP0, 0xE4); // Standard default: 11 10 01 00
+        self.memory_bus.write_byte(OBP1, 0xE4); // Standard default: 11 10 01 00
         self.memory_bus.write_byte(WY, 0x00);
         self.memory_bus.write_byte(WX, 0x00);
         self.memory_bus.write_byte(IE, 0x00);

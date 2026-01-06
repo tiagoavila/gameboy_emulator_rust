@@ -43,13 +43,12 @@ impl Cpu8BitTransferInputOutputInstructions for Cpu {
         let destination = Cpu::get_destination_register(opcode);
         let source = Cpu::get_source_register(opcode);
 
-        if destination == source {
-            return; // No operation needed if both registers are the same
+        if destination != source {
+            let value = self.registers.get_8bit_register_value(source);
+            self.registers.set_8bit_register_value(destination, value);
         }
 
-        let value = self.registers.get_8bit_register_value(source);
-        self.registers.set_8bit_register_value(destination, value);
-
+        // FIX: Always update PPU/timers, even when destination == source
         self.increment_4_cycles_update_timers_and_ppu();
     }
 

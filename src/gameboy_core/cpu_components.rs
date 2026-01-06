@@ -2,7 +2,7 @@ use crate::gameboy_core::{
     constants::{INITIAL_PC, MEMORY_SIZE, OAM_END, OAM_START},
     interrupts::InterruptType,
     ppu_components::LcdcRegister,
-    registers_contants::{self, BGP, LCDC, SCX, SCY},
+    registers_contants::{self, BGP, LCDC, SCX, SCY, DMA},
 };
 
 pub struct CpuRegisters {
@@ -286,6 +286,21 @@ impl MemoryBus {
 
     pub fn write_byte(&mut self, address: u16, value: u8) {
         self.memory[address as usize] = value;
+        
+        // FIX: Handle OAM DMA Transfer when writing to the DMA register ($FF46)
+        // When a game writes the high byte of a source address to $FF46,
+        // the emulator must copy 160 bytes from $XX00–$XX9F to $FE00–$FE9F
+        if address == DMA {
+            // value is the high byte of the source address
+            let source_start = ((value as u16) << 8);  // e.g., 0xC1 becomes 0xC100
+            
+            // Copy from source to OAM (0xFE00 - 0xFE9F)
+            for offset in 0..160 {
+                let source_addr = (source_start + offset as u16) as usize;
+                let dest_addr = (OAM_START + offset as u16) as usize;
+                self.memory[dest_addr] = self.memory[source_addr];
+            }
+        }
     }
 
     pub fn copy_from_binary(&mut self, rom_binary: Vec<u8>) {

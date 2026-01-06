@@ -6,7 +6,7 @@ use crate::gameboy_core::{
     cpu, cpu_components,
     interrupts::InterruptType,
     ppu_components::{self, Tile, TilePixelValue},
-    registers_contants::{LY, LYC, STAT},
+    registers_contants::{BGP, LY, LYC, OBP0, OBP1, STAT},
 };
 
 /// Number of T-cycles per scanline (or LCD line). LY increments every 456 T-cycles.
@@ -297,9 +297,19 @@ impl Ppu {
 
                 // Set mode to 1 (V-Blank)
                 Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::VBlank);
+                
+                // FIX: Update the cached background buffer at V-Blank
+                // This ensures the screen is ready for the next frame and helps with any pending changes
+                cpu.ppu.update_screen_buffer(&cpu.memory_bus);
             } else if ly == 0 {
                 // This handles V-Blank Exit (transition from V-Blank to OAM Search)
                 Ppu::set_ppu_mode_flag_in_stat(cpu, PpuMode::OamSearch);
+            }
+            
+            // FIX: Define objects for the NEW scanline now that LY has been incremented
+            // This ensures that when render_line() is called during Pixel Transfer,
+            // the correct objects for the current scanline are available
+            if ly < VBLANK_START_LINE {
                 Ppu::define_objects_to_be_rendered(cpu, ly);
             }
         } else {
@@ -374,17 +384,15 @@ impl Ppu {
         let objects = Ppu::get_all_40_objects(&cpu.memory_bus);
         let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(&cpu.memory_bus);
         let object_height: isize = if lcdc_register.obj_size { 16 } else { 8 };
+        
         let objects_to_be_rendered = objects
             .iter()
             .filter_map(|object| {
-                // start_object_screen_y: object.y - 16 (handles the 16 offset)
-                // end_object_screen_y: start_object_screen_y + object_height
-                // Formula for 8x8 objects: start_object_screen_y <= ly < end_object_screen_y + 8
-                // Formula for 8x16 objects: start_object_screen_y <= ly < end_object_screen_y + 16
                 let start_object_screen_y = (object.y as isize) - Self::Y_OFFSET;
                 let end_object_screen_y: isize = start_object_screen_y + object_height;
                 let start_object_screen_x = (object.x as isize) - 8;
                 let end_object_screen_x: isize = start_object_screen_x + 8;
+                
                 if (start_object_screen_y <= ly_isize && ly_isize < end_object_screen_y)
                     && (end_object_screen_x >= 0 && start_object_screen_x < GAME_SECTION_WIDTH as isize)
                 {
@@ -416,7 +424,9 @@ impl Ppu {
                     priority: (obj[3] & 0b1000_0000) != 0,
                     y_flip: (obj[3] & 0b0100_0000) != 0,
                     x_flip: (obj[3] & 0b0010_0000) != 0,
-                    pallete: if (obj[3] & 0b0100_0000) != 0 {
+                    // FIX: Bit 4 selects the object palette, not bit 6 (which is y_flip)
+                    // Bit 7 = priority, Bit 6 = y_flip, Bit 5 = x_flip, Bit 4 = palette selection
+                    pallete: if (obj[3] & 0b0001_0000) != 0 {
                         ObjectPallete::OBP1
                     } else {
                         ObjectPallete::OBP0
@@ -448,13 +458,51 @@ impl Ppu {
     }
 
     fn render_background_line_to_screen_buffer(cpu: &mut cpu::Cpu, ly_usize: usize) {
-        let background_buffer: [[u32; 160]; 144] =
-            cpu.ppu.get_bg_screen_buffer_as_colors(&cpu.memory_bus);
-        let background_line = background_buffer[ly_usize];
-        cpu.ppu.screen[ly_usize] = background_line;
+        // FIX: Only calculate the single scanline instead of the entire 144x160 background buffer
+        // This is much more efficient than regenerating all 23,040 pixels just to render 160
+        let lcdc_register = ppu_components::LcdcRegister::get_lcdc_register(&cpu.memory_bus);
+
+        // When Bit 0 is cleared, both background and window become blank (white)
+        if lcdc_register.bg_window_enable == false {
+            cpu.ppu.screen[ly_usize] = [0xFFFFFF; GAME_SECTION_WIDTH];
+            return;
+        }
+
+        let tiles = cpu.ppu.get_tiles(&cpu.memory_bus);
+        let bg_tile_map = cpu.ppu.get_bg_tile_map_as_grid_32x32(&cpu.memory_bus, &lcdc_register);
+        let bg_tiles = cpu.ppu.get_bg_and_window_tiles(&tiles, &lcdc_register);
+        let scy = cpu.memory_bus.get_scy_register() as usize;
+        let scx = cpu.memory_bus.get_scx_register() as usize;
+
+        // Calculate which row in the 256x256 background map we need
+        let bg_row = (scy + ly_usize) % BG_AND_WINDOW_MAP_SCREEN_SIZE;
+        let tile_map_row = bg_row / 8;
+        let tile_pixel_row = bg_row % 8;
+
+        // Render this scanline pixel by pixel
+        for screen_col in 0..GAME_SECTION_WIDTH {
+            let bg_col = (scx + screen_col) % BG_AND_WINDOW_MAP_SCREEN_SIZE;
+            let tile_map_col = bg_col / 8;
+            let tile_pixel_col = bg_col % 8;
+
+            let tile_index = bg_tile_map[tile_map_row][tile_map_col] as usize;
+            let tile = &bg_tiles[tile_index];
+
+            let color_pallete_value = match tile.pixels[tile_pixel_row][tile_pixel_col] {
+                TilePixelValue::Zero => 0,
+                TilePixelValue::One => 1,
+                TilePixelValue::Two => 2,
+                TilePixelValue::Three => 3,
+            };
+
+            let bgp_register = cpu.memory_bus.read_byte(BGP);
+            let palette_index = ((bgp_register >> (color_pallete_value * 2)) & 0b11) as usize;
+            let color = COLORS[palette_index];
+            cpu.ppu.screen[ly_usize][screen_col] = color;
+        }
     }
         
-    fn render_window_line_to_screen_buffer(cpu: &mut cpu::Cpu, ly_usize: usize, lcdc: &ppu_components::LcdcRegister) {
+    fn render_window_line_to_screen_buffer(_cpu: &mut cpu::Cpu, _ly_usize: usize, lcdc: &ppu_components::LcdcRegister) {
         if lcdc.window_enable {
         }
     }
@@ -463,18 +511,59 @@ impl Ppu {
         if lcdc.obj_enable {
             let tiles = cpu.ppu.get_tiles(&cpu.memory_bus);
             let objects = &cpu.ppu.objects_to_be_rendered;
+            let obp0_register = cpu.memory_bus.read_byte(OBP0);
+            let obp1_register = cpu.memory_bus.read_byte(OBP1);
+            
             for object in objects {
-                let start_object_screen_y = (object.y as usize) - Self::Y_OFFSET as usize;
-                let start_object_screen_x = (object.x as usize) - 8;
-                let tile = tiles[object.tile_index as usize];
-                let tile_row = ly_usize - start_object_screen_y;
+                // FIX: Use signed arithmetic to properly handle sprites with y < Y_OFFSET (partially off-screen top)
+                let start_object_screen_y = (object.y as isize) - Self::Y_OFFSET;
+                // FIX: Use signed arithmetic to properly handle sprites with x < 8 (partially off-screen left)
+                let start_object_screen_x = (object.x as isize) - 8;
+                
+                // Determine the object height (8x8 or 8x16 based on LCDC)
+                let object_height: isize = if lcdc.obj_size { 16 } else { 8 };
+                
+                // Calculate which row of the sprite we're on
+                let ly_isize = ly_usize as isize;
+                let mut tile_row = (ly_isize - start_object_screen_y) as usize;
+                
+                // Handle y-flip: if y_flip is set, flip the tile row index
+                if object.attributes.y_flip {
+                    tile_row = (object_height as usize) - 1 - tile_row;
+                }
+                
+                // Get the correct tile for 8x16 objects
+                let tile_index = if lcdc.obj_size && tile_row >= 8 {
+                    // For 8x16 sprites, if we're in the lower half (rows 8-15), use the next tile
+                    (object.tile_index | 1) as usize // Set bit 0 to get the second tile
+                } else {
+                    object.tile_index as usize
+                };
+                
+                let actual_tile_row = tile_row % 8; // Get row within the tile (0-7)
+                
+                // FIX: Bounds check to prevent out-of-bounds access
+                // Sprite tiles are stored in 0x8000-0x8FFF (384 tiles max)
+                if tile_index >= tiles.len() {
+                    continue;  // Skip invalid sprite tile
+                }
+                
+                let tile = tiles[tile_index];
+                
                 for tile_col in 0..8 {
-                    let screen_x = start_object_screen_x as isize + tile_col as isize;
+                    let screen_x = start_object_screen_x + tile_col as isize;
                     if screen_x < 0 || screen_x >= GAME_SECTION_WIDTH as isize {
                         continue; // Skip pixels outside the screen bounds
                     }
 
-                    let pixel_value = match tile.pixels[tile_row][tile_col] {
+                    // Handle x-flip: if x_flip is set, flip the tile column index
+                    let actual_tile_col = if object.attributes.x_flip {
+                        7 - tile_col
+                    } else {
+                        tile_col
+                    };
+                    
+                    let pixel_value = match tile.pixels[actual_tile_row][actual_tile_col] {
                         TilePixelValue::Zero => 0,
                         TilePixelValue::One => 1,
                         TilePixelValue::Two => 2,
@@ -485,12 +574,32 @@ impl Ppu {
                         continue; // Color 0 is transparent for sprites
                     }
 
-                    let color = COLORS[pixel_value as usize];
+                    // FIX: Apply the object palette register to get the actual color
+                    // Palette registers map 2-bit pixel values (0-3) to actual colors (0-3)
+                    let palette_register = match object.attributes.pallete {
+                        ObjectPallete::OBP0 => obp0_register,
+                        ObjectPallete::OBP1 => obp1_register,
+                    };
+                    
+                    // Extract the color from the palette: each 2 bits represent one color mapping
+                    // Bits 7-6 = color 3, Bits 5-4 = color 2, Bits 3-2 = color 1, Bits 1-0 = color 0
+                    let palette_index = ((palette_register >> (pixel_value * 2)) & 0b11) as usize;
+                    let color = COLORS[palette_index];
+                    
+                    // FIX: Respect object priority
+                    // If priority bit is set, only render if background is color 0 (white)
+                    if object.attributes.priority {
+                        // Get the background color at this position
+                        let bg_color = cpu.ppu.screen[ly_usize][screen_x as usize];
+                        // Only render if background is white (color 0 = 0xFFFFFF)
+                        if bg_color != COLORS[0] {
+                            continue; // Skip rendering, background has priority
+                        }
+                    }
+                    
                     cpu.ppu.screen[ly_usize][screen_x as usize] = color;
-                }
+                } 
             } 
         }
     }
-    
-    
 }
